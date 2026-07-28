@@ -65,68 +65,43 @@ export const CLEANING_CHECKLIST = [
   {id:"final", label:"Revisión final — todo listo para huéspedes"}
 ];
 
-/* ===== Per-room checklist item catalogs — cleaning tasks + functionality checks ===== */
+/* ===== Per-room checklist item catalogs — simple clean + appliance/functionality checks ===== */
 export const BEDROOM_ITEMS = [
-  {id:"beds", label:"Tender cama y cambiar sábanas"},
-  {id:"dust", label:"Sacudir polvo en muebles y superficies"},
-  {id:"floor", label:"Aspirar/trapear piso"},
-  {id:"mirrors", label:"Limpiar espejos y vidrios"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"closet", label:"Revisar clóset — libre de objetos olvidados"},
-  {id:"lights", label:"Foco(s) encienden correctamente"},
-  {id:"ac", label:"Aire acondicionado funciona y control tiene pilas"},
+  {id:"clean", label:"Limpieza general de la recámara"},
+  {id:"tv", label:"TV funciona"},
+  {id:"ac", label:"Aire acondicionado funciona"},
   {id:"fan", label:"Ventilador funciona"},
-  {id:"tv", label:"TV enciende y control remoto funciona"},
-  {id:"windows", label:"Ventanas/cortinas cierran correctamente"}
+  {id:"remotes", label:"Controles remotos (TV, A/C) tienen pilas"},
+  {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
 export const BATHROOM_ITEMS = [
-  {id:"toilet", label:"Limpiar y desinfectar excusado"},
-  {id:"shower", label:"Limpiar regadera/tina"},
-  {id:"sink", label:"Limpiar lavabo y espejo"},
-  {id:"floor", label:"Trapear piso"},
-  {id:"amenities", label:"Reponer papel higiénico y amenities"},
-  {id:"towels", label:"Toallas limpias repuestas"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"hotwater", label:"Agua caliente funciona en regadera"},
-  {id:"faucet", label:"Agua corre bien en llave del lavabo (sin fugas)"},
-  {id:"lights", label:"Foco(s) encienden correctamente"},
-  {id:"vent", label:"Extractor de baño funciona"}
+  {id:"clean", label:"Baño limpio"},
+  {id:"toiletpaper", label:"Papel higiénico colocado"},
+  {id:"toiletpaperspare", label:"Rollo de repuesto de papel higiénico"},
+  {id:"shampoo", label:"Shampoo disponible"},
+  {id:"conditioner", label:"Acondicionador disponible"},
+  {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
 export const HALF_BATH_ITEMS = [
-  {id:"toilet", label:"Limpiar y desinfectar excusado"},
-  {id:"sink", label:"Limpiar lavabo y espejo"},
-  {id:"floor", label:"Trapear piso"},
-  {id:"amenities", label:"Reponer papel higiénico y jabón"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"faucet", label:"Agua corre bien en llave del lavabo"},
+  {id:"clean", label:"Baño limpio"},
+  {id:"toiletpaper", label:"Papel higiénico colocado"},
+  {id:"toiletpaperspare", label:"Rollo de repuesto de papel higiénico"},
   {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
 export const LIVING_ITEMS = [
-  {id:"tidy", label:"Acomodar y limpiar cojines/muebles"},
-  {id:"floor", label:"Aspirar/trapear piso"},
-  {id:"surfaces", label:"Limpiar mesa de centro y superficies"},
-  {id:"windows", label:"Limpiar ventanas y espejos"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"tv", label:"TV enciende y control remoto funciona"},
-  {id:"ac", label:"Aire acondicionado/ventilador funciona"},
-  {id:"acremote", label:"Control de A/C tiene pilas"},
+  {id:"clean", label:"Limpieza general de la sala"},
+  {id:"tv", label:"TV funciona"},
   {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
 export const KITCHEN_ITEMS = [
-  {id:"surfaces", label:"Limpiar y desinfectar superficies y barra"},
-  {id:"dishes", label:"Lavar y guardar trastes"},
-  {id:"stove", label:"Limpiar estufa y horno"},
-  {id:"fridge", label:"Limpiar refrigerador por dentro y por fuera"},
-  {id:"floor", label:"Trapear piso"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"utensils", label:"Revisar que no falten utensilios básicos"},
-  {id:"faucet", label:"Agua corre bien en la llave"},
-  {id:"burners", label:"Estufa enciende correctamente (todas las hornillas)"},
+  {id:"clean", label:"Limpieza general de la cocina"},
   {id:"microwave", label:"Microondas funciona"},
+  {id:"blender", label:"Licuadora funciona"},
+  {id:"coffee", label:"Cafetera funciona"},
   {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
@@ -138,30 +113,19 @@ export const DINING_ITEMS = [
 ];
 
 export const TERRACE_ITEMS = [
-  {id:"furniture", label:"Acomodar muebles y camastros de terraza"},
-  {id:"furniturecheck", label:"Revisar que muebles/camastros estén en buen estado (sin roturas)"},
-  {id:"cushions", label:"Sacudir/limpiar cojines y tapicería exterior"},
-  {id:"sweep", label:"Barrer y trapear piso"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"railing", label:"Limpiar barandales y vidrios"},
-  {id:"cobwebs", label:"Quitar telarañas e insectos"},
-  {id:"plants", label:"Regar y despejar plantas/macetas"},
-  {id:"lights", label:"Foco(s)/luces exteriores encienden correctamente"},
-  {id:"fan", label:"Ventilador de techo funciona (si aplica)"},
-  {id:"outlets", label:"Contactos eléctricos exteriores funcionan"}
+  {id:"clean", label:"Limpieza general de la terraza"},
+  {id:"furniture", label:"Muebles de exterior acomodados y en su lugar"},
+  {id:"grill", label:"Parrilla/asador funciona"},
+  {id:"lights", label:"Foco(s)/luces exteriores encienden correctamente"}
 ];
 
 export const STUDIO_ITEMS = [
-  {id:"beds", label:"Tender cama y cambiar sábanas"},
-  {id:"dust", label:"Sacudir polvo en muebles y superficies"},
-  {id:"floor", label:"Aspirar/trapear piso"},
-  {id:"mirrors", label:"Limpiar espejos y vidrios"},
-  {id:"trash", label:"Vaciar basura"},
-  {id:"lights", label:"Foco(s) encienden correctamente"},
-  {id:"ac", label:"Aire acondicionado funciona y control tiene pilas"},
+  {id:"clean", label:"Limpieza general del estudio"},
+  {id:"tv", label:"TV funciona"},
+  {id:"ac", label:"Aire acondicionado funciona"},
   {id:"fan", label:"Ventilador funciona"},
-  {id:"tv", label:"TV enciende y control remoto funciona"},
-  {id:"windows", label:"Ventanas/cortinas cierran correctamente"}
+  {id:"remotes", label:"Controles remotos (TV, A/C) tienen pilas"},
+  {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
 /* ===== One-time room-count reference (from owner-supplied list) — matched by fuzzy name against live properties ===== */

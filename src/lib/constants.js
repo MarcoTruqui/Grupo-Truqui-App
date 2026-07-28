@@ -94,14 +94,13 @@ export const HALF_BATH_ITEMS = [
 export const LIVING_ITEMS = [
   {id:"clean", label:"Limpieza general de la sala"},
   {id:"tv", label:"TV funciona"},
+  {id:"fan", label:"Ventilador funciona"},
   {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 
 export const KITCHEN_ITEMS = [
   {id:"clean", label:"Limpieza general de la cocina"},
-  {id:"microwave", label:"Microondas funciona"},
-  {id:"blender", label:"Licuadora funciona"},
-  {id:"coffee", label:"Cafetera funciona"},
+  {id:"appliances", label:"Electrodomésticos funcionan (microondas, licuadora, cafetera)"},
   {id:"lights", label:"Foco(s) encienden correctamente"}
 ];
 

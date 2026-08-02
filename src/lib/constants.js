@@ -189,3 +189,11 @@ export function buildRoomChecklist(property) {
 
   return rooms;
 }
+
+/* ===== Daily/occupancy cleaning — same rooms, one "Limpio" check per space ===== */
+export const CLEANING_TYPE_LABEL = {daily:"Diaria (ocupación)", checkout:"Salida (check-out)"};
+
+export function buildDailyChecklist(property) {
+  const rooms = buildRoomChecklist(property);
+  return rooms.map(room => ({...room, items:[{id:"clean", label:"Limpio"}]}));
+}

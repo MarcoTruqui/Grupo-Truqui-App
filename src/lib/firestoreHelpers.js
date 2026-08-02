@@ -1,3 +1,7 @@
+import firebase from "firebase/compat/app";
+import "firebase/compat/firestore";
+import { buildRoomChecklist, buildDailyChecklist } from "./constants";
+
 export function getVacationDaysBySeniority(hireDate) {
   if (!hireDate) return null;
   const yrs = Math.floor((Date.now() - new Date(hireDate+"T12:00:00").getTime()) / (365.25*24*60*60*1000));
@@ -152,4 +156,128 @@ export async function adminDecideCompReq(currentUser,db,reqId,approved,comment) 
 export async function cancelCompRequest(db,reqId) {
   try { await db.collection("comp_requests").doc(reqId).update({status:"cancelled"}); }
   catch(e){alert("Error: "+e.message);}
+}
+
+/* ===== Cleaning module — these were nested inside App() in the source file and closed
+   over db/currentUser/role/properties/storage directly. Extracted here as standalone
+   functions, they take those as explicit leading params instead. ===== */
+
+export async function uploadDataUrl(storage, dataUrl, path) {
+  const blob = await fetch(dataUrl).then(r => r.blob());
+  const ref = storage.ref(path);
+  await ref.put(blob, {contentType:"image/png"});
+  return ref.getDownloadURL();
+}
+
+export async function startOrJoinCleaning(currentUser, role, db, properties, propertyName, cleaningType) {
+  const existing = await db.collection("cleanings").where("property", "==", propertyName).where("status", "==", "in_progress").limit(1).get();
+  if (!existing.empty) {
+    const doc = existing.docs[0];
+    const data = doc.data();
+    if (!(data.workers || []).some(w => w.userId === currentUser.id)) {
+      const updated = [...(data.workers || []), {userId:currentUser.id, name:currentUser.name, role, signature:null, signedAt:null, joinedAt:new Date().toISOString()}];
+      await doc.ref.update({workers:updated});
+    }
+    return doc.id;
+  }
+  const propRec = properties.find(p => p.name === propertyName);
+  const rooms = cleaningType === "daily" ? buildDailyChecklist(propRec) : buildRoomChecklist(propRec);
+  const totalItems = rooms.reduce((sum, r) => sum + r.items.length, 0);
+  const docRef = await db.collection("cleanings").add({
+    property:propertyName,
+    cleaningType:cleaningType || "checkout",
+    status:"in_progress",
+    workers:[{userId:currentUser.id, name:currentUser.name, role, signature:null, signedAt:null, joinedAt:new Date().toISOString()}],
+    startedAt:new Date().toISOString(),
+    completedAt:null,
+    totalItems,
+    doneItems:0,
+    createdBy:currentUser?.name || "Desconocido",
+    createdByRole:role,
+    createdAt:new Date().toISOString()
+  });
+  const batch = db.batch();
+  rooms.forEach((room, roomOrder) => {
+    room.items.forEach((item, itemOrder) => {
+      const itemRef = docRef.collection("items").doc(`${room.id}__${item.id}`);
+      batch.set(itemRef, {roomId:room.id, roomLabel:room.label, roomOrder, itemKey:item.id, itemLabel:item.label, itemOrder, status:"pending", checkedBy:null, checkedByName:null, checkedAt:null, note:"", linkedTaskId:null});
+    });
+  });
+  await batch.commit();
+  return docRef.id;
+}
+
+export async function setItemStatus(currentUser, db, cleaningId, itemDocId, status, note, meta) {
+  const itemRef = db.collection("cleanings").doc(cleaningId).collection("items").doc(itemDocId);
+  const snap = await itemRef.get();
+  const prev = snap.data() || {};
+  const wasPending = !prev.status || prev.status === "pending";
+  const nowPending = !status || status === "pending";
+  await itemRef.update({status, checkedBy:nowPending ? null : currentUser.id, checkedByName:nowPending ? null : currentUser.name, checkedAt:nowPending ? null : new Date().toISOString(), note:note || ""});
+  if (wasPending && !nowPending) await db.collection("cleanings").doc(cleaningId).update({doneItems:firebase.firestore.FieldValue.increment(1)});
+  if (!wasPending && nowPending) await db.collection("cleanings").doc(cleaningId).update({doneItems:firebase.firestore.FieldValue.increment(-1)});
+  if (status === "red" && !prev.linkedTaskId) {
+    const taskRef = await db.collection("tasks").add({
+      title:`${meta.itemLabel} — ${meta.roomLabel}`,
+      property:meta.property,
+      priority:"Medium",
+      status:"Open",
+      desc:`Reportado automáticamente durante limpieza por ${currentUser.name}.${note ? " Nota: " + note : ""}`,
+      createdBy:currentUser?.name || "Desconocido",
+      source:"cleaning",
+      sourceCleaningId:cleaningId,
+      sourceRoomLabel:meta.roomLabel,
+      history:[{action:"Tarea creada automáticamente desde limpieza", by:currentUser?.name || "Desconocido", date:new Date().toISOString()}],
+      comments:[],
+      photos:[],
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    });
+    await itemRef.update({linkedTaskId:taskRef.id});
+  }
+}
+
+export async function joinCleaningWorker(currentUser, role, db, cleaningId, currentWorkers, targetUser) {
+  const u = targetUser || currentUser;
+  if (currentWorkers.some(w => w.userId === u.id)) return;
+  const updated = [...currentWorkers, {userId:u.id, name:u.name, role:u.role || role, signature:null, signedAt:null, joinedAt:new Date().toISOString()}];
+  await db.collection("cleanings").doc(cleaningId).update({workers:updated});
+}
+
+export async function removeCleaningWorker(db, cleaningId, currentWorkers, idx) {
+  if (currentWorkers.length <= 1) return;
+  const updated = currentWorkers.filter((_, i) => i !== idx);
+  await db.collection("cleanings").doc(cleaningId).update({workers:updated});
+}
+
+export async function signCleaningWorker(storage, db, cleaningId, currentWorkers, workerIdx, signatureDataUrl) {
+  const signatureUrl = await uploadDataUrl(storage, signatureDataUrl, `cleanings/${cleaningId}/signatures/${Date.now()}_${workerIdx}.png`);
+  const updated = currentWorkers.map((w, i) => i === workerIdx ? {...w, signature:signatureUrl, signedAt:new Date().toISOString()} : w);
+  const allSigned = updated.length > 0 && updated.every(w => w.signature);
+  const extra = allSigned ? {status:"completed", completedAt:new Date().toISOString()} : {};
+  await db.collection("cleanings").doc(cleaningId).update({workers:updated, ...extra});
+}
+
+export async function cancelCleaning(db, cleaningId) {
+  const itemsSnap = await db.collection("cleanings").doc(cleaningId).collection("items").get();
+  const commentsSnap = await db.collection("cleanings").doc(cleaningId).collection("comments").get();
+  const batch = db.batch();
+  itemsSnap.docs.forEach(d => batch.delete(d.ref));
+  commentsSnap.docs.forEach(d => batch.delete(d.ref));
+  batch.delete(db.collection("cleanings").doc(cleaningId));
+  await batch.commit();
+  const linkedTasks = await db.collection("tasks").where("sourceCleaningId", "==", cleaningId).get();
+  await Promise.all(linkedTasks.docs.map(d => d.ref.delete()));
+}
+
+export async function addCleaningComment(currentUser, db, cleaningId, roomId, text) {
+  const t = (text || "").trim();
+  if (!t) return;
+  await db.collection("cleanings").doc(cleaningId).collection("comments").add({
+    roomId,
+    text:t,
+    authorId:currentUser.id,
+    authorName:currentUser.name,
+    createdAt:new Date().toISOString()
+  });
 }

@@ -48,6 +48,7 @@ export const COLOR_FRAMES = [
 export const PRI_ORD = {High:0, Medium:1, Low:2};
 
 export const ITEM_STATUS_ICON = {pending:"⬜", green:"✅", yellow:"🟡", red:"🔴"};
+export const ITEM_STATUS_COLOR = {pending:"#ccc", green:"#1D9E75", yellow:"#BA7517", red:"#D85A30"};
 
 /* Fallback flat checklist for properties with no bedrooms/bathrooms set yet */
 export const CLEANING_CHECKLIST = [

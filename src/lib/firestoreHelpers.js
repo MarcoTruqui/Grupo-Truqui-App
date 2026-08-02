@@ -25,6 +25,15 @@ export function getCurrentAnniversaryYear(hireDate) {
   return Math.floor((Date.now()-new Date(hireDate+"T12:00:00").getTime())/(365.25*24*60*60*1000));
 }
 
+/* Sundays never count as a vacation day, even if present in selectedDays (legacy data, edge cases) */
+export function isSundayISO(iso) {
+  if (!iso) return false;
+  return new Date(iso+"T12:00:00").getDay() === 0;
+}
+export function countPTODays(days) {
+  return (days||[]).filter(d => !isSundayISO(d)).length;
+}
+
 export function getPTOBalance(uid,users,ptoRequests) {
   const u=users.find(x=>x.id===uid);
   const seniority = getVacationDaysBySeniority(u?.hireDate);
@@ -33,13 +42,13 @@ export function getPTOBalance(uid,users,ptoRequests) {
   const yr=new Date().getFullYear();
   const ys=yr+"-01-01",ye=yr+"-12-31";
   const reqs=ptoRequests.filter(r=>r.userId===uid);
-  const usedFromReqs=reqs.filter(r=>r.status==="approved").flatMap(r=>r.selectedDays||[]).filter(d=>d>=ys&&d<=ye).length;
+  const usedFromReqs=reqs.filter(r=>r.status==="approved").flatMap(r=>r.selectedDays||[]).filter(d=>d>=ys&&d<=ye&&!isSundayISO(d)).length;
   const curYr=getCurrentAnniversaryYear(u?.hireDate);
   const carryoverValid=u?.carryoverYearsCompleted===curYr;
   const carryover=carryoverValid?(u?.vacationUsedCarryover||0):0;
   const borrowed=carryoverValid?(u?.vacationBorrowed||0):0;
   const used=usedFromReqs+carryover;
-  const pending=reqs.filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).flatMap(r=>r.selectedDays||[]).filter(d=>d>=ys&&d<=ye).length;
+  const pending=reqs.filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).flatMap(r=>r.selectedDays||[]).filter(d=>d>=ys&&d<=ye&&!isSundayISO(d)).length;
   const available=annual+borrowed-used-pending;
   return {annual,used,pending,borrowed,available};
 }

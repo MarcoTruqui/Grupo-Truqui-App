@@ -5,6 +5,7 @@ import { Av } from "../shared/Avatar";
 import { RBadge } from "../shared/Badges";
 import { RequestCard } from "./RequestCard";
 import { PTOCalendar } from "./PTOCalendar";
+import { TeamVacationCalendar } from "./TeamVacationCalendar";
 
 export function VacationSection({currentUser,role,users,ptoRequests,db,onBack,onSwitch,onMarkSeen}) {
   useEffect(()=>{ if(onMarkSeen) onMarkSeen(); },[]);
@@ -126,7 +127,7 @@ export function VacationSection({currentUser,role,users,ptoRequests,db,onBack,on
 
       {isAdminRole&&<>
         <div className="tab-bar">
-          {[["pending",`Por aprobar (${toAdminReview.length})`],["approved","Aprobadas"],["denied","Denegadas"],["all","Todas"]].map(([k,l])=>
+          {[["pending",`Por aprobar (${toAdminReview.length})`],["approved","Aprobadas"],["denied","Denegadas"],["all","Todas"],["calendar","Calendario"]].map(([k,l])=>
             <button key={k} className={`tab-btn${staffTab===k?" active":""}`} onClick={()=>setStaffTab(k)}>{l}</button>
           )}
         </div>
@@ -148,19 +149,22 @@ export function VacationSection({currentUser,role,users,ptoRequests,db,onBack,on
           {allPTO.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:30}}>Sin solicitudes aún</div>}
           {allPTO.map(r=><RequestCard key={r.id} r={r} {...cardProps}/>)}
         </>}
-        <div className="section-label" style={{marginTop:8}}>Totales de todo el personal</div>
-        {users.filter(u=>u.role!=="admin").map(u=>{
-          const b=getPTOBalance(u.id,users,ptoRequests);
-          return <div key={u.id} style={{background:"#fff",borderRadius:12,padding:12,marginBottom:8,border:"0.5px solid rgba(0,0,0,0.07)",display:"flex",alignItems:"center",gap:12}}>
-            <Av name={u.name} size={36} bg={ROLE_META[u.role]?.bg||"#888"}/>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{u.name}</div><div style={{marginTop:3}}><RBadge role={u.role}/></div></div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,textAlign:"center"}}>
-              {[["Total",b.annual,"#534AB7"],["Usados",b.used,"#BA7517"],["Disp.",b.available,"#1D9E75"]].map(([l,v,c])=>
-                <div key={l}><div style={{fontSize:16,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:"#aaa"}}>{l}</div></div>
-              )}
-            </div>
-          </div>;
-        })}
+        {staffTab==="calendar"&&<TeamVacationCalendar users={users} ptoRequests={ptoRequests}/>}
+        {staffTab!=="calendar"&&<>
+          <div className="section-label" style={{marginTop:8}}>Totales de todo el personal</div>
+          {users.filter(u=>u.role!=="admin").map(u=>{
+            const b=getPTOBalance(u.id,users,ptoRequests);
+            return <div key={u.id} style={{background:"#fff",borderRadius:12,padding:12,marginBottom:8,border:"0.5px solid rgba(0,0,0,0.07)",display:"flex",alignItems:"center",gap:12}}>
+              <Av name={u.name} size={36} bg={ROLE_META[u.role]?.bg||"#888"}/>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{u.name}</div><div style={{marginTop:3}}><RBadge role={u.role}/></div></div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,textAlign:"center"}}>
+                {[["Total",b.annual,"#534AB7"],["Usados",b.used,"#BA7517"],["Disp.",b.available,"#1D9E75"]].map(([l,v,c])=>
+                  <div key={l}><div style={{fontSize:16,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:"#aaa"}}>{l}</div></div>
+                )}
+              </div>
+            </div>;
+          })}
+        </>}
       </>}
     </div>
   </div>;

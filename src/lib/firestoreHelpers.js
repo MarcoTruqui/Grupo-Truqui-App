@@ -1,6 +1,6 @@
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
-import { buildRoomChecklist, buildDailyChecklist } from "./constants";
+import { buildRoomChecklist, buildDailyChecklist, STATUS_LABEL, FAKE_DOMAIN } from "./constants";
 
 export function getVacationDaysBySeniority(hireDate) {
   if (!hireDate) return null;
@@ -289,4 +289,136 @@ export async function addCleaningComment(currentUser, db, cleaningId, roomId, te
     authorName:currentUser.name,
     createdAt:new Date().toISOString()
   });
+}
+
+/* ===== Tasks / properties / users / photos — these were defined directly inside App() in the
+   source file and closed over currentUser/db/storage. Extracted here as standalone functions
+   with those as explicit leading params. Two of them (advance, addTask via advance) also used
+   to call setSelTask/setApprovalSel locally inside App() after the write — that local-state
+   sync stays in App.jsx as a thin wrapper around the pure write here, since a shared module
+   can't reach into a component's state. ===== */
+
+export function hEntry(currentUser, action) {
+  return {action, by:currentUser?.name || "Desconocido", date:new Date().toISOString()};
+}
+
+export async function advance(currentUser, db, id, status, extra = {}) {
+  const hist = [...(extra._hist || []), hEntry(currentUser, `Estado → ${STATUS_LABEL[status] || status}`)];
+  delete extra._hist;
+  try {
+    await db.collection("tasks").doc(id).update({status, ...extra, history:firebase.firestore.FieldValue.arrayUnion(...hist), updatedAt:new Date().toISOString()});
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export function compressImg(dataUrl, maxW = 1000, quality = 0.6) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      c.toBlob(blob => { resolve(blob || new Blob()); }, "image/jpeg", quality);
+    };
+    img.onerror = () => fetch(dataUrl).then(r => r.blob()).then(resolve);
+    img.src = dataUrl;
+  });
+}
+
+export async function uploadPhotos(storage, photos, folder) {
+  if (!photos || !photos.length) return [];
+  const results = await Promise.all(photos.map(async (photo) => {
+    try {
+      const blob = await compressImg(photo.url);
+      const ref = storage.ref(`${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${photo.name.replace(/\.[^.]+$/, "")}.jpg`);
+      await ref.put(blob, {contentType:"image/jpeg"});
+      const url = await ref.getDownloadURL();
+      return {url, name:photo.name, caption:photo.caption || ""};
+    } catch (e) {
+      console.error("Error subiendo:", e);
+      return null;
+    }
+  }));
+  return results.filter(Boolean);
+}
+
+export function bgUpload(storage, db, photos, folder, taskId, field) {
+  if (!photos || !photos.length) return;
+  uploadPhotos(storage, photos, folder).then(uploaded => {
+    if (uploaded.length) db.collection("tasks").doc(taskId).update({[field]:firebase.firestore.FieldValue.arrayUnion(...uploaded), updatedAt:new Date().toISOString()}).catch(e => console.error("BG upload:", e));
+  }).catch(e => console.error("BG upload:", e));
+}
+
+export async function addTask(currentUser, storage, db, data, localPhotos = []) {
+  try {
+    const docRef = await db.collection("tasks").add({...data, photos:[], history:[hEntry(currentUser, "Tarea creada")], comments:[], createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
+    if (localPhotos.length) bgUpload(storage, db, localPhotos, `tasks/${docRef.id}`, docRef.id, "photos");
+  } catch (e) { alert("Error guardando tarea: " + e.message); }
+}
+
+export async function removeTask(db, id) {
+  try { await db.collection("tasks").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function addComment(currentUser, storage, db, taskId, text, photos = [], type = "comment") {
+  const comment = {text, author:currentUser?.name || "Desconocido", date:new Date().toISOString(), photos:[], type};
+  try {
+    await db.collection("tasks").doc(taskId).update({comments:firebase.firestore.FieldValue.arrayUnion(comment), history:firebase.firestore.FieldValue.arrayUnion(hEntry(currentUser, type === "approval" ? "Acción de aprobación" : "Agregó un comentario")), updatedAt:new Date().toISOString()});
+    if (photos.length) {
+      uploadPhotos(storage, photos, `tasks/${taskId}/comments`).then(uploaded => {
+        if (!uploaded.length) return;
+        db.collection("tasks").doc(taskId).get().then(doc => {
+          if (!doc.exists) return;
+          const cmts = [...(doc.data().comments || [])];
+          const idx = cmts.findIndex(c => c.date === comment.date && c.author === comment.author && c.text === comment.text);
+          if (idx > -1) { cmts[idx] = {...cmts[idx], photos:uploaded}; db.collection("tasks").doc(taskId).update({comments:cmts}); }
+        });
+      }).catch(e => console.error("Fotos comentario:", e));
+    }
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function addProperty(db, properties, name, bedrooms = null, bathrooms = null) {
+  try { await db.collection("properties").add({name, bedrooms, bathrooms, order:properties.length, createdAt:new Date().toISOString()}); } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function removeProperty(db, id, name) {
+  try {
+    await db.collection("properties").doc(id).delete();
+    const snap = await db.collection("tasks").where("property", "==", name).get();
+    await Promise.all(snap.docs.map(d => d.ref.delete()));
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function renameProperty(db, propId, oldName, newName) {
+  const t = newName.trim();
+  if (!t || t === oldName) return false;
+  try {
+    await db.collection("properties").doc(propId).update({name:t});
+    const snap = await db.collection("tasks").where("property", "==", oldName).get();
+    await Promise.all(snap.docs.map(d => d.ref.update({property:t})));
+    return true;
+  } catch (e) { alert("Error: " + e.message); return false; }
+}
+
+export async function updateProperty(db, id, data) {
+  try { await db.collection("properties").doc(id).update(data); } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function addUser(db, data) {
+  try {
+    const email = data.username.trim().toLowerCase() + FAKE_DOMAIN;
+    await db.collection("users").add({name:data.name, username:data.username.trim().toLowerCase(), role:data.role, properties:data.properties, email, createdAt:new Date().toISOString()});
+    alert(`Usuario guardado.\n\nTambién créalo en Firebase Console → Authentication:\nEmail: ${email}\nContraseña: ${data.password}`);
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function updateUser(db, id, data) {
+  try { await db.collection("users").doc(id).update(data); } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function removeUser(db, id) {
+  try { await db.collection("users").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
 }

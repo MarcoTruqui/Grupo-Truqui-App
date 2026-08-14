@@ -1,4 +1,5 @@
 import { STATUS_META, STATUS_LABEL, PRIORITY_META, PRIORITY_LABEL, ROLE_META } from "../../lib/constants";
+import { OCCUPANCY_META, OCCUPANCY_LABEL } from "../../lib/bookingHelpers";
 
 export function SBadge({status}) {
   const m = STATUS_META[status] || {bg:"#eee", color:"#333", dot:"#999"};
@@ -17,4 +18,10 @@ export function AutoCleaningBadge() {
 export function RBadge({role}) {
   const m = ROLE_META[role] || {label:role, bg:"#888", color:"#fff"};
   return <span className="badge" style={{background:m.bg, color:m.color}}>{m.label}</span>;
+}
+
+export function OBadge({occupancy}) {
+  const m = OCCUPANCY_META[occupancy];
+  if (!m) return null;
+  return <span className="badge" style={{background:m.bg, color:m.color}}><span className="badge-dot" style={{background:m.dot}}/>{OCCUPANCY_LABEL[occupancy]}</span>;
 }

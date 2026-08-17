@@ -191,6 +191,10 @@ export function buildRoomChecklist(property) {
   return rooms;
 }
 
+/* ===== Construction portal ===== */
+export const CONSTRUCTION_PHOTO_CATEGORIES = ["Cimentación","Estructura","Instalaciones (Eléctrica/Plomería)","Acabados","Fachada/Exterior","Problemas/Incidencias","General"];
+export const CONSTRUCTION_DOC_CATEGORIES = ["Planos","Shop Drawings","Arquitectónicos","Blueprints"];
+
 /* ===== Daily/occupancy cleaning — same rooms, one "Limpio" check per space ===== */
 export const CLEANING_TYPE_LABEL = {daily:"Diaria (ocupación)", checkout:"Salida (check-out)"};
 

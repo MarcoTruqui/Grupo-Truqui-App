@@ -1,9 +1,9 @@
-export function PortalSelector({user, onSelect, canCleaning}) {
-  const portals = [
-    {key:"maintenance",icon:"🔧",title:"Mantenimiento",sub:"Tareas, propiedades y seguimiento",color:"#534AB7",bg:"#EEEDFE",border:"#AFA9EC"},
-    {key:"admin",icon:"🏢",title:"Admin / RH",sub:"Vacaciones, empleados y más",color:"#1D9E75",bg:"#E1F5EE",border:"#A0D9C5"}
-  ];
+export function PortalSelector({user, onSelect, canCleaning, canConstruction, showMaintenance = true}) {
+  const portals = [];
+  if (showMaintenance) portals.push({key:"maintenance",icon:"🔧",title:"Mantenimiento",sub:"Tareas, propiedades y seguimiento",color:"#534AB7",bg:"#EEEDFE",border:"#AFA9EC"});
+  portals.push({key:"admin",icon:"🏢",title:"Admin / RH",sub:"Vacaciones, empleados y más",color:"#1D9E75",bg:"#E1F5EE",border:"#A0D9C5"});
   if (canCleaning) portals.push({key:"cleaning",icon:"🧹",title:"Limpieza",sub:"Checklist y firma de limpieza",color:"#378ADD",bg:"#E6F1FB",border:"#8FC0EE"});
+  if (canConstruction) portals.push({key:"construction",icon:"🏗️",title:"Construcción",sub:"Bitácora, planos y subcontratistas",color:"#E87A30",bg:"#FDEEE3",border:"#F0B584"});
   return <div style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",paddingTop:"calc(40px + env(safe-area-inset-top))",paddingBottom:"calc(24px + env(safe-area-inset-bottom))",background:"#f5f5f7",gap:14,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
     <div style={{textAlign:"center",marginBottom:12}}>
       <div style={{fontSize:28,fontWeight:800,color:"#534AB7",letterSpacing:"-0.03em",marginBottom:4}}>Grupo Truqui</div>

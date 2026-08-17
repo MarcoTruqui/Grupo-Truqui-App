@@ -3,12 +3,14 @@ import { COLOR_FRAMES, CLEANING_TYPE_LABEL } from "../../lib/constants";
 import { fmtDate } from "../../lib/dateHelpers";
 import { CleaningSheet } from "./CleaningSheet";
 import { CleaningDetailSheet } from "./CleaningDetailSheet";
+import { CleaningStats } from "./CleaningStats";
 
 export function CleaningPortal({db, currentUser, role, allPropNames, propColorMap, users, cleanings, startOrJoinCleaning, setItemStatus, joinCleaningWorker, removeCleaningWorker, signCleaningWorker, cancelCleaning, addCleaningComment, onSwitch}) {
   const [activeCleaning, setActiveCleaning] = useState(null);
   const [opening, setOpening] = useState(null);
   const [cleaningSel, setCleaningSel] = useState(null);
   const [pendingProp, setPendingProp] = useState(null);
+  const [tab, setTab] = useState("main");
   const isCleaning = role === "cleaning";
   const userAssignedProps = currentUser?.properties || [];
   const propNames = isCleaning ? allPropNames.filter(p => userAssignedProps.includes(p)) : allPropNames;
@@ -48,8 +50,13 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
         </div>
         {onSwitch && <button onClick={onSwitch} style={{fontSize:11, padding:"6px 14px", borderRadius:8, border:"0.5px solid rgba(0,0,0,0.12)", background:"#f5f5f5", color:"#555", cursor:"pointer", fontWeight:500}}>⊞ Portales</button>}
       </div>
+      {role === "admin" && <div style={{display:"flex", gap:4, marginTop:14}}>
+        <button onClick={() => setTab("main")} style={{flex:1, padding:"9px 0", border:"none", borderRadius:8, background: tab === "main" ? "#E6F1FB" : "transparent", color: tab === "main" ? "#378ADD" : "#999", fontSize:13, fontWeight:600, cursor:"pointer"}}>Portal</button>
+        <button onClick={() => setTab("stats")} style={{flex:1, padding:"9px 0", border:"none", borderRadius:8, background: tab === "stats" ? "#E6F1FB" : "transparent", color: tab === "stats" ? "#378ADD" : "#999", fontSize:13, fontWeight:600, cursor:"pointer"}}>📊 Estadísticas</button>
+      </div>}
     </div>
     <div style={{flex:1, overflowY:"auto", padding:"20px 14px", WebkitOverflowScrolling:"touch"}}>
+      {tab === "stats" ? <CleaningStats cleanings={visibleCleanings}/> : <>
       <div className="section-label">Propiedades</div>
       {propNames.length === 0 && <div style={{textAlign:"center", color:"#aaa", fontSize:13, padding:20}}>No tienes propiedades asignadas.</div>}
       {propNames.map(p => {
@@ -80,6 +87,7 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
       <div style={{marginTop:24}}>
         <button className="btn-red" onClick={() => window._auth.signOut()}>Cerrar sesión</button>
       </div>
+      </>}
     </div>
     {pendingProp && <div className="modal-overlay" onClick={() => setPendingProp(null)}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{height:"auto", borderRadius:20}}>

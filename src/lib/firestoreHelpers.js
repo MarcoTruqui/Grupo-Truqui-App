@@ -1,6 +1,8 @@
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
+import "firebase/compat/auth";
 import { buildRoomChecklist, buildDailyChecklist, STATUS_LABEL, FAKE_DOMAIN } from "./constants";
+import { firebaseConfig } from "./firebase";
 
 export function getVacationDaysBySeniority(hireDate) {
   if (!hireDate) return null;
@@ -407,12 +409,34 @@ export async function updateProperty(db, id, data) {
   try { await db.collection("properties").doc(id).update(data); } catch (e) { alert("Error: " + e.message); }
 }
 
+const AUTH_ERROR_MESSAGES = {
+  "auth/email-already-in-use": "Ese nombre de usuario ya existe.",
+  "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+  "auth/invalid-email": "Nombre de usuario inválido."
+};
+
+/* Creating another user's login normally signs the ADMIN out and into the new
+   account (Firebase Auth's client SDK ties account-creation to sign-in). A
+   throwaway secondary app instance dodges that — it creates the account on its
+   own isolated auth session, then gets torn down, leaving the admin's real
+   session untouched. No backend/Cloud Function needed. */
 export async function addUser(db, data) {
+  const username = data.username.trim().toLowerCase();
+  const email = username + FAKE_DOMAIN;
+  const secondaryApp = firebase.initializeApp(firebaseConfig, `secondary-${Date.now()}`);
   try {
-    const email = data.username.trim().toLowerCase() + FAKE_DOMAIN;
-    await db.collection("users").add({name:data.name, username:data.username.trim().toLowerCase(), role:data.role, properties:data.properties, email, createdAt:new Date().toISOString()});
-    alert(`Usuario guardado.\n\nTambién créalo en Firebase Console → Authentication:\nEmail: ${email}\nContraseña: ${data.password}`);
-  } catch (e) { alert("Error: " + e.message); }
+    await secondaryApp.auth().createUserWithEmailAndPassword(email, data.password);
+    await db.collection("users").add({
+      name:data.name, username, role:data.role, properties:data.properties || [],
+      email, hireDate:data.hireDate || new Date().toISOString().slice(0, 10),
+      createdAt:new Date().toISOString()
+    });
+  } catch (e) {
+    throw new Error(AUTH_ERROR_MESSAGES[e.code] || e.message);
+  } finally {
+    try { await secondaryApp.auth().signOut(); } catch {}
+    try { await secondaryApp.delete(); } catch {}
+  }
 }
 
 export async function updateUser(db, id, data) {

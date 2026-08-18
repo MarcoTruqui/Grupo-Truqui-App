@@ -7,7 +7,7 @@ import { VacationSection } from "./VacationSection";
 import { AdminEmployeesSection } from "./AdminEmployeesSection";
 import { CompWorkSection } from "./CompWorkSection";
 
-export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compRequests,db,onSwitch,onMarkSeen,allPropNames,propColorMap,updateUser,removeUser}) {
+export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compRequests,db,onSwitch,onMarkSeen,allPropNames,propColorMap,updateUser,removeUser,addUser}) {
   const [page,setPage] = useState(null);
   const pendingPTO = role==="supervisor"
     ? ptoRequests.filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor").length
@@ -16,7 +16,7 @@ export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compReq
     ? [...compWork,...compRequests].filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor").length
     : [...compWork,...compRequests].filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).length;
   if(page==="vacation") return <VacationSection currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} onMarkSeen={onMarkSeen}/>;
-  if(page==="employees") return <AdminEmployeesSection users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} onBack={()=>setPage(null)} onSwitch={onSwitch}/>;
+  if(page==="employees") return <AdminEmployeesSection users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser} onBack={()=>setPage(null)} onSwitch={onSwitch}/>;
   if(page==="compwork") return <CompWorkSection currentUser={currentUser} role={role} users={users} compWork={compWork} compRequests={compRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} allPropNames={allPropNames}/>;
   return <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f5f5f7"}}>
     <div style={{background:"#fff",padding:"16px 16px 14px",paddingTop:"calc(16px + env(safe-area-inset-top))",borderBottom:"0.5px solid rgba(0,0,0,0.08)",flexShrink:0}}>

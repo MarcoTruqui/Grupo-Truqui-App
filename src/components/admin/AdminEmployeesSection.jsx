@@ -5,10 +5,12 @@ import { Av } from "../shared/Avatar";
 import { RBadge } from "../shared/Badges";
 import { EditSheet } from "./EditSheet";
 import { EmployeeDetailSheet } from "./EmployeeDetailSheet";
+import { AddEmployeeSheet } from "./AddEmployeeSheet";
 
-export function AdminEmployeesSection({users,ptoRequests,compWork,compRequests,allPropNames,propColorMap,updateUser,removeUser,onBack,onSwitch}) {
+export function AdminEmployeesSection({users,ptoRequests,compWork,compRequests,allPropNames,propColorMap,updateUser,removeUser,addUser,onBack,onSwitch}) {
   const [editing,setEditing] = useState(null);
   const [viewingId,setViewingId] = useState(null);
+  const [adding,setAdding] = useState(false);
 
   return <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f5f5f7"}}>
     <div style={{background:"#fff",padding:"14px 16px 12px",paddingTop:"calc(14px + env(safe-area-inset-top))",borderBottom:"0.5px solid rgba(0,0,0,0.08)",flexShrink:0}}>
@@ -17,7 +19,10 @@ export function AdminEmployeesSection({users,ptoRequests,compWork,compRequests,a
       </div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{fontSize:18,fontWeight:700,color:"#1a1a1a"}}>👥 Empleados</div>
-        {onSwitch&&<button onClick={onSwitch} style={{fontSize:11,padding:"6px 12px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.12)",background:"#f5f5f5",color:"#555",cursor:"pointer"}}>⊞ Portales</button>}
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>setAdding(true)} style={{fontSize:11,padding:"6px 12px",borderRadius:8,border:"none",background:"#534AB7",color:"#fff",cursor:"pointer",fontWeight:600}}>+ Agregar</button>
+          {onSwitch&&<button onClick={onSwitch} style={{fontSize:11,padding:"6px 12px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.12)",background:"#f5f5f5",color:"#555",cursor:"pointer"}}>⊞ Portales</button>}
+        </div>
       </div>
     </div>
     <div style={{flex:1,overflowY:"auto",padding:"16px 14px 32px",WebkitOverflowScrolling:"touch"}}>
@@ -60,5 +65,6 @@ export function AdminEmployeesSection({users,ptoRequests,compWork,compRequests,a
     </div>
     <EditSheet editing={editing} setEditing={setEditing} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser}/>
     {viewingId && <EmployeeDetailSheet viewingId={viewingId} setViewingId={setViewingId} setEditing={setEditing} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests}/>}
+    {adding && <AddEmployeeSheet allPropNames={allPropNames} propColorMap={propColorMap} addUser={addUser} onClose={()=>setAdding(false)}/>}
   </div>;
 }

@@ -7,7 +7,7 @@ import { SubcontractorsTab } from "./SubcontractorsTab";
 
 const TABS = [["headcount","Personal"],["log","Bitácora"],["photos","Fotos"],["docs","Planos"],["subs","Subcontratistas"]];
 
-export function ConstructionPortal({db, storage, currentUser, projects, headcount, dailyLogs, photos, documents, subcontractors, addConstructionProject, saveHeadcountEntry, removeHeadcountEntry, addDailyLog, removeDailyLog, addConstructionPhotos, removeConstructionPhoto, uploadConstructionDocument, removeConstructionDocument, addSubcontractor, updateSubcontractor, removeSubcontractor, addSubPayment, removeSubPayment, onSwitch}) {
+export function ConstructionPortal({db, storage, currentUser, projects, headcount, dailyLogs, photos, documents, details, subcontractors, addConstructionProject, saveHeadcountEntry, removeHeadcountEntry, addDailyLog, removeDailyLog, addConstructionPhotos, removeConstructionPhoto, uploadConstructionDocument, removeConstructionDocument, addDetailPin, addDetailVersion, removeDetailPin, updateDetailLabel, addSubcontractor, updateSubcontractor, removeSubcontractor, addSubPayment, removeSubPayment, onSwitch}) {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [tab, setTab] = useState("headcount");
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -78,6 +78,7 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
   const projectLogs = dailyLogs.filter(l => l.projectId === activeProjectId);
   const projectPhotos = photos.filter(ph => ph.projectId === activeProjectId);
   const projectDocs = documents.filter(d => d.projectId === activeProjectId);
+  const projectDetails = details.filter(det => det.projectId === activeProjectId);
   const projectSubs = subcontractors.filter(s => s.projectId === activeProjectId);
 
   return <div style={{height:"100%", display:"flex", flexDirection:"column", background:"#f5f5f7"}}>
@@ -99,7 +100,7 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
       {tab === "headcount" && <HeadcountTab projectId={activeProjectId} currentUser={currentUser} db={db} entries={projectHeadcount} subcontractors={projectSubs} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry}/>}
       {tab === "log" && <DailyLogTab projectId={activeProjectId} currentUser={currentUser} db={db} logs={projectLogs} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog}/>}
       {tab === "photos" && <PhotosTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} photos={projectPhotos} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto}/>}
-      {tab === "docs" && <DocumentsTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} documents={projectDocs} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument}/>}
+      {tab === "docs" && <DocumentsTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} documents={projectDocs} details={projectDetails} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel}/>}
       {tab === "subs" && <SubcontractorsTab projectId={activeProjectId} currentUser={currentUser} db={db} subcontractors={projectSubs} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment}/>}
     </div>
   </div>;

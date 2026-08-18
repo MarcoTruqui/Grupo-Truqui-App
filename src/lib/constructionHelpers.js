@@ -59,23 +59,71 @@ export async function removeConstructionPhoto(db, id) {
   try { await db.collection("constructionPhotos").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
 }
 
-/* ===== Documents / plans / drawings — versioned, raw file upload (PDFs or images) ===== */
-export async function uploadConstructionDocument(currentUser, storage, db, projectId, file, category, name, previousDocId, previousVersion) {
+/* ===== Documents / plans / drawings — versioned, raw file upload (PDFs or images) =====
+   Each version is its own doc linked via previousDocId/supersededBy. `rootId` stays the
+   same across every version in the chain (set to the first version's own id) so anything
+   tied to "this drawing" — like detail pins — survives a new version being uploaded. */
+export async function uploadConstructionDocument(currentUser, storage, db, projectId, file, category, name, previousDocId, previousVersion, previousRootId) {
   try {
     const ref = storage.ref(`construction/${projectId}/documents/${Date.now()}_${file.name}`);
     await ref.put(file, {contentType:file.type || "application/octet-stream"});
     const url = await ref.getDownloadURL();
     const version = (previousVersion || 0) + 1;
-    const docRef = await db.collection("constructionDocuments").add({
-      projectId, name, category, fileUrl:url, fileName:file.name, version, isLatest:true, previousDocId:previousDocId || null,
+    const isImage = (file.type || "").startsWith("image/");
+    const newRef = db.collection("constructionDocuments").doc();
+    const rootId = previousRootId || newRef.id;
+    await newRef.set({
+      projectId, name, category, fileUrl:url, fileName:file.name, isImage, version, isLatest:true,
+      previousDocId:previousDocId || null, rootId,
       uploadedBy:currentUser.name, uploadedAt:new Date().toISOString()
     });
-    if (previousDocId) await db.collection("constructionDocuments").doc(previousDocId).update({isLatest:false, supersededBy:docRef.id});
+    if (previousDocId) await db.collection("constructionDocuments").doc(previousDocId).update({isLatest:false, supersededBy:newRef.id});
   } catch (e) { alert("Error: " + e.message); }
 }
 
 export async function removeConstructionDocument(db, id) {
   try { await db.collection("constructionDocuments").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
+}
+
+/* ===== Detail pins — a marked location on an image plan, linking to an annotated on-site
+   photo. Tied to the plan's rootId (not one specific version) so pins keep working after a
+   new version of the drawing is uploaded. History is an array like subcontractor payments —
+   infrequent, sequential updates, no concurrent-edit concern. ===== */
+async function uploadDetailPhoto(storage, projectId, dataUrl) {
+  const blob = await fetch(dataUrl).then(r => r.blob());
+  const ref = storage.ref(`construction/${projectId}/details/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`);
+  await ref.put(blob, {contentType:"image/jpeg"});
+  return ref.getDownloadURL();
+}
+
+export async function addDetailPin(currentUser, storage, db, projectId, rootId, x, y, label, annotatedDataUrl) {
+  try {
+    const url = await uploadDetailPhoto(storage, projectId, annotatedDataUrl);
+    const entry = {photoUrl:url, createdBy:currentUser.name, createdAt:new Date().toISOString()};
+    await db.collection("constructionDetails").add({
+      projectId, rootId, x, y, label,
+      currentPhotoUrl:url, history:[entry],
+      createdBy:currentUser.name, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()
+    });
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function addDetailVersion(currentUser, storage, db, projectId, detailId, currentHistory, annotatedDataUrl) {
+  try {
+    const url = await uploadDetailPhoto(storage, projectId, annotatedDataUrl);
+    const entry = {photoUrl:url, createdBy:currentUser.name, createdAt:new Date().toISOString()};
+    await db.collection("constructionDetails").doc(detailId).update({
+      currentPhotoUrl:url, history:[...(currentHistory || []), entry], updatedAt:new Date().toISOString()
+    });
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function removeDetailPin(db, id) {
+  try { await db.collection("constructionDetails").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function updateDetailLabel(db, id, label) {
+  try { await db.collection("constructionDetails").doc(id).update({label}); } catch (e) { alert("Error: " + e.message); }
 }
 
 /* ===== Subcontractors + payments (payments kept as an array on the doc — infrequent, sequential entries, no concurrent-edit concern like cleaning items) ===== */

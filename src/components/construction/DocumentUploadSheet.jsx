@@ -11,7 +11,7 @@ export function DocumentUploadSheet({projectId, previousDoc, uploadConstructionD
   async function handleUpload() {
     if (!file || !name.trim()) return;
     setUploading(true);
-    await uploadConstructionDocument(projectId, file, category, name.trim(), previousDoc?.id || null, previousDoc?.version || 0);
+    await uploadConstructionDocument(projectId, file, category, name.trim(), previousDoc?.id || null, previousDoc?.version || 0, previousDoc?.rootId || previousDoc?.id || null);
     setUploading(false);
     onClose();
   }

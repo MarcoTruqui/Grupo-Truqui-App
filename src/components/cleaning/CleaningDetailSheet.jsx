@@ -3,12 +3,21 @@ import { CLEANING_TYPE_LABEL, ITEM_STATUS_ICON } from "../../lib/constants";
 import { fmtDate, fmtDuration } from "../../lib/dateHelpers";
 import { CleaningComments } from "./CleaningComments";
 
-export function CleaningDetailSheet({cleaning, db, role, onClose}) {
+export function CleaningDetailSheet({cleaning, db, role, cancelCleaning, onClose}) {
   const [items, setItems] = useState(null);
   const [comments, setComments] = useState([]);
   const [openRooms, setOpenRooms] = useState({});
   const [typeOverride, setTypeOverride] = useState(null);
   const [savingType, setSavingType] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm(`¿Eliminar esta limpieza de ${cleaning.property}? Se borrará permanentemente, incluyendo fotos y firmas.`)) return;
+    setDeleting(true);
+    await cancelCleaning(cleaning.id);
+    setDeleting(false);
+    onClose();
+  }
 
   function toggleRoom(roomId) {
     setOpenRooms(o => ({...o, [roomId]:!o[roomId]}));
@@ -121,6 +130,7 @@ export function CleaningDetailSheet({cleaning, db, role, onClose}) {
         <div style={{fontSize:11, color:"#aaa", marginTop:10}}>Registrada por {cleaning.createdBy || "—"}</div>
       </div>
       <div className="modal-sheet-bottom">
+        {role === "admin" && <button className="btn-red" style={{marginBottom:10}} disabled={deleting} onClick={handleDelete}>{deleting ? "Eliminando…" : "Eliminar limpieza"}</button>}
         <div className="btn-row"><button className="btn-secondary" onClick={onClose} style={{width:"100%"}}>Cerrar</button></div>
       </div>
     </div>

@@ -103,6 +103,6 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
       </div>
     </div>}
     {activeCleaning && <CleaningSheet cleaningId={activeCleaning.id} property={activeCleaning.property} db={db} currentUser={currentUser} users={users} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} setItemStatus={setItemStatus} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onClose={() => setActiveCleaning(null)}/>}
-    {cleaningSel && <CleaningDetailSheet cleaning={cleaningSel} db={db} role={role} onClose={() => setCleaningSel(null)}/>}
+    {cleaningSel && <CleaningDetailSheet cleaning={cleaningSel} db={db} role={role} cancelCleaning={cancelCleaning} onClose={() => setCleaningSel(null)}/>}
   </div>;
 }

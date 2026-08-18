@@ -24,13 +24,14 @@ export async function removeHeadcountEntry(db, id) {
   try { await db.collection("constructionHeadcount").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
 }
 
-/* ===== Daily logs ===== */
-export async function addDailyLog(currentUser, db, projectId, data) {
+/* ===== Daily logs — one per project per day, upserted like headcount, so "today's log"
+   stays a single entry that gets edited through the day instead of piling up duplicates.
+   Once the date rolls over, the next save naturally starts a fresh doc. ===== */
+export async function addDailyLog(currentUser, db, projectId, existingId, data) {
+  const payload = {projectId, date:data.date, weather:data.weather || "", workPerformed:data.workPerformed || "", issues:data.issues || ""};
   try {
-    await db.collection("constructionDailyLogs").add({
-      projectId, date:data.date, weather:data.weather || "", workPerformed:data.workPerformed || "", issues:data.issues || "",
-      createdBy:currentUser.name, createdAt:new Date().toISOString()
-    });
+    if (existingId) await db.collection("constructionDailyLogs").doc(existingId).update({...payload, updatedBy:currentUser.name, updatedAt:new Date().toISOString()});
+    else await db.collection("constructionDailyLogs").add({...payload, createdBy:currentUser.name, createdAt:new Date().toISOString()});
   } catch (e) { alert("Error: " + e.message); }
 }
 

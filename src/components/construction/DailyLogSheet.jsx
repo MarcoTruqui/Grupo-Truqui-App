@@ -3,17 +3,17 @@ import { useState } from "react";
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 const WEATHER_OPTIONS = ["Soleado", "Nublado", "Lluvia", "Tormenta", "Viento fuerte"];
 
-export function DailyLogSheet({projectId, addDailyLog, onClose}) {
-  const [date, setDate] = useState(todayISO());
-  const [weather, setWeather] = useState("");
-  const [workPerformed, setWorkPerformed] = useState("");
-  const [issues, setIssues] = useState("");
+export function DailyLogSheet({projectId, log, addDailyLog, onClose}) {
+  const [date, setDate] = useState(log?.date || todayISO());
+  const [weather, setWeather] = useState(log?.weather || "");
+  const [workPerformed, setWorkPerformed] = useState(log?.workPerformed || "");
+  const [issues, setIssues] = useState(log?.issues || "");
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     if (!workPerformed.trim()) return;
     setSaving(true);
-    await addDailyLog(projectId, {date, weather, workPerformed:workPerformed.trim(), issues:issues.trim()});
+    await addDailyLog(projectId, log?.id || null, {date, weather, workPerformed:workPerformed.trim(), issues:issues.trim()});
     setSaving(false);
     onClose();
   }
@@ -22,7 +22,7 @@ export function DailyLogSheet({projectId, addDailyLog, onClose}) {
     <div className="modal-sheet" onClick={e => e.stopPropagation()}>
       <div className="modal-handle"/>
       <div className="modal-sheet-scroll">
-        <div className="modal-title">Nueva bitácora</div>
+        <div className="modal-title">{log ? "Editar bitácora" : "Nueva bitácora"}</div>
         <div className="modal-sub">Registro diario de avance en obra</div>
         <div className="field"><label>Fecha</label><input type="date" value={date} onChange={e => setDate(e.target.value)}/></div>
         <div className="field"><label>Clima</label>

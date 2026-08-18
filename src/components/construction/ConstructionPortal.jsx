@@ -4,12 +4,15 @@ import { DailyLogTab } from "./DailyLogTab";
 import { PhotosTab } from "./PhotosTab";
 import { DocumentsTab } from "./DocumentsTab";
 import { SubcontractorsTab } from "./SubcontractorsTab";
+import { ExportReportSheet } from "./ExportReportSheet";
 
-const TABS = [["headcount","Personal"],["log","Bitácora"],["photos","Fotos"],["docs","Planos"],["subs","Subcontratistas"]];
+const TABS = [["headcount","👷","Personal"],["log","📋","Bitácora"],["photos","📷","Fotos"],["docs","📐","Planos"],["subs","💰","Subcontratistas"]];
 
 export function ConstructionPortal({db, storage, currentUser, projects, headcount, dailyLogs, photos, documents, details, subcontractors, addConstructionProject, saveHeadcountEntry, removeHeadcountEntry, addDailyLog, removeDailyLog, addConstructionPhotos, removeConstructionPhoto, uploadConstructionDocument, removeConstructionDocument, addDetailPin, addDetailVersion, removeDetailPin, updateDetailLabel, addSubcontractor, updateSubcontractor, removeSubcontractor, addSubPayment, removeSubPayment, onSwitch}) {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [tab, setTab] = useState("headcount");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -80,6 +83,7 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
   const projectDocs = documents.filter(d => d.projectId === activeProjectId);
   const projectDetails = details.filter(det => det.projectId === activeProjectId);
   const projectSubs = subcontractors.filter(s => s.projectId === activeProjectId);
+  const currentTab = TABS.find(([k]) => k === tab) || TABS[0];
 
   return <div style={{height:"100%", display:"flex", flexDirection:"column", background:"#f5f5f7"}}>
     <div style={{background:"#fff", padding:"14px 16px 12px", paddingTop:"calc(14px + env(safe-area-inset-top))", borderBottom:"0.5px solid rgba(0,0,0,0.08)", flexShrink:0}}>
@@ -92,8 +96,9 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
       </div>
     </div>
 
-    <div className="tab-bar" style={{flexShrink:0, overflowX:"auto"}}>
-      {TABS.map(([k, l]) => <button key={k} className={`tab-btn${tab === k ? " active" : ""}`} onClick={() => setTab(k)} style={{whiteSpace:"nowrap"}}>{l}</button>)}
+    <div onClick={() => setMenuOpen(true)} style={{flexShrink:0, background:"#fff", borderBottom:"0.5px solid rgba(0,0,0,0.08)", padding:"10px 16px", display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}>
+      <span style={{fontSize:20, lineHeight:1}}>☰</span>
+      <span style={{fontSize:15, fontWeight:700, color:"#1a1a1a"}}>{currentTab[1]} {currentTab[2]}</span>
     </div>
 
     <div style={{flex:1, overflowY:"auto", padding:"16px 14px 32px", WebkitOverflowScrolling:"touch"}}>
@@ -103,5 +108,25 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
       {tab === "docs" && <DocumentsTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} documents={projectDocs} details={projectDetails} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel}/>}
       {tab === "subs" && <SubcontractorsTab projectId={activeProjectId} currentUser={currentUser} db={db} subcontractors={projectSubs} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment}/>}
     </div>
+
+    {menuOpen && <div className="modal-overlay" onClick={() => setMenuOpen(false)} style={{alignItems:"flex-start"}}>
+      <div onClick={e => e.stopPropagation()} style={{background:"#fff", width:"100%", maxWidth:500, margin:"0 auto", borderRadius:"0 0 20px 20px", paddingTop:"calc(8px + env(safe-area-inset-top))", paddingBottom:12}}>
+        <div style={{padding:"10px 16px", fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:"0.06em"}}>Secciones</div>
+        {TABS.map(([k, icon, l]) => (
+          <div key={k} onClick={() => { setTab(k); setMenuOpen(false); }} style={{display:"flex", alignItems:"center", gap:14, padding:"14px 16px", background:tab === k ? "#FDEEE3" : "transparent", cursor:"pointer"}}>
+            <span style={{fontSize:22, width:28, textAlign:"center"}}>{icon}</span>
+            <span style={{fontSize:15, fontWeight:tab === k ? 700 : 500, color:tab === k ? "#E87A30" : "#1a1a1a"}}>{l}</span>
+            {tab === k && <span style={{marginLeft:"auto", color:"#E87A30"}}>✓</span>}
+          </div>
+        ))}
+        <div style={{height:1, background:"#f0f0f0", margin:"8px 0"}}/>
+        <div onClick={() => { setExportOpen(true); setMenuOpen(false); }} style={{display:"flex", alignItems:"center", gap:14, padding:"14px 16px", cursor:"pointer"}}>
+          <span style={{fontSize:22, width:28, textAlign:"center"}}>📄</span>
+          <span style={{fontSize:15, fontWeight:500, color:"#1a1a1a"}}>Exportar reporte</span>
+        </div>
+      </div>
+    </div>}
+
+    {exportOpen && <ExportReportSheet projectName={activeProject.name} logs={projectLogs} photos={projectPhotos} headcount={projectHeadcount} onClose={() => setExportOpen(false)}/>}
   </div>;
 }

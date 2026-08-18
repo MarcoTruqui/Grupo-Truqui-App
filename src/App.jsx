@@ -266,7 +266,7 @@ function App() {
   async function addConstructionProject(name) { await addConstructionProjectFn(db, name); }
   async function saveHeadcountEntry(projectId, existingId, date, rows) { await saveHeadcountEntryFn(currentUser, db, projectId, existingId, date, rows); }
   async function removeHeadcountEntry(id) { await removeHeadcountEntryFn(db, id); }
-  async function addDailyLog(projectId, data) { await addDailyLogFn(currentUser, db, projectId, data); }
+  async function addDailyLog(projectId, existingId, data) { await addDailyLogFn(currentUser, db, projectId, existingId, data); }
   async function removeDailyLog(id) { await removeDailyLogFn(db, id); }
   async function addConstructionPhotos(projectId, photos, category) { await addConstructionPhotosFn(currentUser, storage, db, projectId, photos, category); }
   async function removeConstructionPhoto(id) { await removeConstructionPhotoFn(db, id); }

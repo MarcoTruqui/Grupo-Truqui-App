@@ -23,10 +23,12 @@ export function DailyLogSheet({projectId, log, previousLog, subcontractors, addD
   function updateSubRow(i, patch) { setBySubcontractor(rs => rs.map((r, j) => j === i ? {...r, ...patch} : r)); }
   function removeSubRow(i) { setBySubcontractor(rs => rs.filter((_, j) => j !== i)); }
 
+  const cleanSub = bySubcontractor.filter(r => r.subcontractorId && r.note.trim()).map(r => ({subcontractorId:r.subcontractorId, note:r.note.trim()}));
+  const canSave = !!workPerformed.trim() || cleanSub.length > 0;
+
   async function handleSave() {
-    if (!workPerformed.trim()) return;
+    if (!canSave) return;
     setSaving(true);
-    const cleanSub = bySubcontractor.filter(r => r.subcontractorId && r.note.trim()).map(r => ({subcontractorId:r.subcontractorId, note:r.note.trim()}));
     await addDailyLog(projectId, log?.id || null, {date, weather, workPerformed:workPerformed.trim(), issues:issues.trim(), bySubcontractor:cleanSub});
     setSaving(false);
     onClose();
@@ -70,7 +72,7 @@ export function DailyLogSheet({projectId, log, previousLog, subcontractors, addD
       <div className="modal-sheet-bottom">
         <div className="btn-row">
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} style={{opacity:workPerformed.trim() ? 1 : 0.5}}>{saving ? "Guardando…" : "Guardar"}</button>
+          <button className="btn-primary" onClick={handleSave} style={{opacity:canSave ? 1 : 0.5}}>{saving ? "Guardando…" : "Guardar"}</button>
         </div>
       </div>
     </div>

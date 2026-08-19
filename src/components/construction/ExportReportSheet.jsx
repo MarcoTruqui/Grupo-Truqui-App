@@ -47,19 +47,19 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
 
         <div className="field">
           <label>Incluir</label>
-          <div style={{display:"flex", flexDirection:"column", gap:10}}>
-            <label style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}>
-              <input type="checkbox" checked={includeLogs} onChange={e => setIncludeLogs(e.target.checked)} style={{width:18, height:18}}/>
-              <span style={{fontSize:14}}>Bitácora ({filteredLogs.length})</span>
-            </label>
-            <label style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}>
-              <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)} style={{width:18, height:18}}/>
-              <span style={{fontSize:14}}>Fotos ({filteredPhotos.length})</span>
-            </label>
-            <label style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}>
-              <input type="checkbox" checked={includeHeadcount} onChange={e => setIncludeHeadcount(e.target.checked)} style={{width:18, height:18}}/>
-              <span style={{fontSize:14}}>Personal ({filteredHeadcount.length})</span>
-            </label>
+          <div style={{display:"flex", flexDirection:"column", gap:8}}>
+            {[
+              ["logs", "Bitácora", filteredLogs.length, includeLogs, setIncludeLogs],
+              ["photos", "Fotos", filteredPhotos.length, includePhotos, setIncludePhotos],
+              ["headcount", "Personal", filteredHeadcount.length, includeHeadcount, setIncludeHeadcount]
+            ].map(([key, label, count, checked, setChecked]) => (
+              <div key={key} onClick={() => setChecked(v => !v)} style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer", padding:"10px 12px", borderRadius:10, background:checked ? "#EAF3DE" : "#fafafa", border:checked ? "1.5px solid #1D9E75" : "1.5px solid #e0e0e0"}}>
+                <div style={{width:20, height:20, borderRadius:6, border:checked ? "none" : "1.5px solid #ccc", background:checked ? "#1D9E75" : "#fff", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
+                  {checked && <span style={{color:"#fff", fontSize:13, fontWeight:700, lineHeight:1}}>✓</span>}
+                </div>
+                <span style={{fontSize:14, color:checked ? "#1D9E75" : "#333", fontWeight:checked ? 600 : 400}}>{label} ({count})</span>
+              </div>
+            ))}
           </div>
         </div>
 

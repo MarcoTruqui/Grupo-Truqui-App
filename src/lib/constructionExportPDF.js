@@ -31,7 +31,7 @@ function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak, subcon
         ${l.weather ? `<div style="font-size:11px;color:#888;background:#f5f5f5;padding:2px 10px;border-radius:20px">${l.weather}</div>` : ""}
       </div>
       <div style="font-size:11px;color:#aaa;margin-bottom:6px">Registrado por ${l.createdBy || "—"}</div>
-      <div style="font-size:13px;color:#333;line-height:1.5">${l.workPerformed || ""}</div>
+      ${l.workPerformed ? `<div style="font-size:13px;color:#333;line-height:1.5">${l.workPerformed}</div>` : ""}
       ${(l.bySubcontractor || []).length ? `<div style="margin-top:8px">${l.bySubcontractor.map(r => `<div style="font-size:12px;color:#555;background:#FDEEE3;border-radius:8px;padding:6px 10px;margin-top:6px"><strong style="color:#B75A17">${subName(r.subcontractorId)}:</strong> ${r.note}</div>`).join("")}</div>` : ""}
       ${l.issues ? `<div style="font-size:12px;color:#B45309;background:#FFF8E1;padding:8px 10px;border-radius:8px;margin-top:8px">⚠️ ${l.issues}</div>` : ""}
     </div>`).join("");
@@ -41,31 +41,30 @@ function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak, subcon
   </div>`;
 }
 
+/* Vertical, one date-block per entry with subcontractors listed as stacked rows underneath —
+   deliberately not a wide table, since the column count would grow with every new
+   subcontractor and stop fitting a printed page. */
 function buildHeadcountSection(projectName, entries, dateFrom, dateTo, pageBreak) {
   const sorted = [...entries].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const allTrades = [...new Set(sorted.flatMap(e => (e.rows || []).map(r => r.trade)))];
-  const rows = sorted.map(e => {
+  const blocks = sorted.map(e => {
     const total = (e.rows || []).reduce((s, r) => s + (Number(r.count) || 0), 0);
-    const byTrade = {};
-    (e.rows || []).forEach(r => { byTrade[r.trade] = r.count; });
-    return `<tr style="border-bottom:1px solid #f0f0f0">
-      <td style="padding:8px;font-size:12px;font-weight:600">${fmtDateShort(e.date)}</td>
-      ${allTrades.map(t => `<td style="padding:8px;text-align:center;font-size:12px;color:#555">${byTrade[t] ?? "—"}</td>`).join("")}
-      <td style="padding:8px;text-align:center;font-size:13px;font-weight:700;color:#E87A30">${total}</td>
-    </tr>`;
+    const tradeRows = (e.rows || []).map(r => `
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#444;border-bottom:1px dashed #f0f0f0">
+        <span>${r.trade}</span><span style="font-weight:600">${r.count}</span>
+      </div>`).join("");
+    return `
+      <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #eee">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:14px;font-weight:700">${fmtDate(e.date)}</div>
+          <div style="font-size:14px;font-weight:700;color:#E87A30">${total} total</div>
+        </div>
+        ${tradeRows}
+      </div>`;
   }).join("");
   const grandTotal = sorted.reduce((s, e) => s + (e.rows || []).reduce((a, r) => a + (Number(r.count) || 0), 0), 0);
   return `<div style="${pageBreak ? "page-break-before:always;" : ""}">
     ${buildHeader(projectName, "Registro de Personal", dateFrom, dateTo)}
-    ${sorted.length ? `<table style="width:100%;border-collapse:collapse;border:1px solid #eee">
-      <thead><tr style="background:#f5f5f7">
-        <th style="padding:8px;text-align:left;font-size:11px;color:#888">Fecha</th>
-        ${allTrades.map(t => `<th style="padding:8px;text-align:center;font-size:11px;color:#888">${t}</th>`).join("")}
-        <th style="padding:8px;text-align:center;font-size:11px;color:#888">Total</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div style="margin-top:16px;text-align:right;font-size:14px;font-weight:700">Total del periodo: ${grandTotal}</div>`
+    ${sorted.length ? `${blocks}<div style="margin-top:10px;text-align:right;font-size:14px;font-weight:700">Total del periodo: ${grandTotal}</div>`
     : '<div style="text-align:center;color:#aaa;padding:40px">Sin registros de personal en este rango de fechas.</div>'}
   </div>`;
 }
@@ -88,17 +87,38 @@ function buildPhotosSection(projectName, photos, dateFrom, dateTo, pageBreak) {
 const SECTION_BUILDERS = {logs:buildLogsSection, headcount:buildHeadcountSection, photos:buildPhotosSection};
 const SECTION_LABELS = {logs:"Bitácora", headcount:"Personal", photos:"Fotos"};
 
-/* sections: [{key:"logs"|"photos"|"headcount", data:[...]}], in the order they should appear */
+/* sections: [{key:"logs"|"photos"|"headcount", data:[...]}], in the order they should appear.
+   Opens via a Blob + real <a> click instead of window.open("", "_blank") + document.write —
+   the latter gets silently blocked by mobile Safari/Chrome's popup blocker because it treats
+   a scripted window.open to a blank window as a popup, while a genuine anchor click with
+   target="_blank" is treated as normal link navigation and isn't blocked. */
 export function exportConstructionReport(projectName, dateFrom, dateTo, sections, subcontractors) {
   const title = sections.length === 1 ? `${SECTION_LABELS[sections[0].key]} — ${projectName}` : `Reporte — ${projectName}`;
   const body = sections.map((s, i) => SECTION_BUILDERS[s.key](projectName, s.data, dateFrom, dateTo, i > 0, subcontractors)).join("");
   const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"/><title>${title}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:40px}@media print{.noprint{display:none!important}}</style>
+<html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${title}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:24px 24px 60px}
+.topbar{position:sticky;top:0;background:#fff;padding:10px 0;margin:-24px -24px 20px;padding-left:24px;padding-right:24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;z-index:10}
+.topbar button{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+@media print{.noprint{display:none!important}body{padding:16px}}
+</style>
 </head><body>
+<div class="topbar noprint">
+  <button onclick="window.close()" style="background:#f5f5f5;color:#555;border:0.5px solid rgba(0,0,0,0.15)">‹ Cerrar</button>
+  <button onclick="window.print()" style="background:#E87A30;color:#fff">Imprimir / Guardar PDF</button>
+</div>
 ${body}
-<div style="margin-top:24px;text-align:center" class="noprint"><button onclick="window.print()" style="padding:10px 28px;background:#E87A30;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Imprimir / Guardar PDF</button></div>
 </body></html>`;
-  const w = window.open("", "_blank");
-  if (w) { w.document.write(html); w.document.close(); }
+  const blob = new Blob([html], {type:"text/html"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }

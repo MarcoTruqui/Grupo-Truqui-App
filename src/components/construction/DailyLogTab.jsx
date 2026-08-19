@@ -27,7 +27,7 @@ export function DailyLogTab({projectId, logs, subcontractors, addDailyLog, remov
           {l.weather && <span className="badge" style={{background:"#f0f0f0", color:"#666"}}>{l.weather}</span>}
         </div>
         <div className="task-prop" style={{marginBottom:6}}>Por {l.createdBy}</div>
-        <div className="note-box">{l.workPerformed}</div>
+        {l.workPerformed && <div className="note-box">{l.workPerformed}</div>}
         {(l.bySubcontractor || []).length > 0 && <div style={{marginTop:8, display:"flex", flexDirection:"column", gap:6}}>
           {l.bySubcontractor.map((r, i) => (
             <div key={i} style={{fontSize:12, background:"#FDEEE3", borderRadius:8, padding:"6px 10px"}}>

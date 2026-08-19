@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { CONSTRUCTION_PHOTO_CATEGORIES } from "../../lib/constants";
 import { PhotoUpload } from "../shared/PhotoUpload";
 
-export function PhotoUploadSheet({projectId, addConstructionPhotos, onClose}) {
-  const [category, setCategory] = useState(CONSTRUCTION_PHOTO_CATEGORIES[0]);
+export function PhotoUploadSheet({projectId, photoCategories, addConstructionPhotos, onClose}) {
+  const [category, setCategory] = useState(photoCategories[0] || "");
   const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
 
@@ -23,7 +22,7 @@ export function PhotoUploadSheet({projectId, addConstructionPhotos, onClose}) {
         <div className="modal-sub">Categoriza las fotos del avance de obra</div>
         <div className="field"><label>Categoría</label>
           <select value={category} onChange={e => setCategory(e.target.value)}>
-            {CONSTRUCTION_PHOTO_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {photoCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="field"><label>Fotos</label><PhotoUpload photos={photos} setPhotos={setPhotos}/></div>

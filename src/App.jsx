@@ -14,7 +14,7 @@ import {
 } from "./lib/firestoreHelpers";
 import { getOccupancy as getOccupancyFn, getPropBookingDetails as getPropBookingDetailsFn } from "./lib/bookingHelpers";
 import {
-  addConstructionProject as addConstructionProjectFn, saveHeadcountEntry as saveHeadcountEntryFn,
+  addConstructionProject as addConstructionProjectFn, updateConstructionProject as updateConstructionProjectFn, renamePhotoCategory as renamePhotoCategoryFn, saveHeadcountEntry as saveHeadcountEntryFn,
   removeHeadcountEntry as removeHeadcountEntryFn, addDailyLog as addDailyLogFn, removeDailyLog as removeDailyLogFn,
   addConstructionPhotos as addConstructionPhotosFn, removeConstructionPhoto as removeConstructionPhotoFn,
   uploadConstructionDocument as uploadConstructionDocumentFn, removeConstructionDocument as removeConstructionDocumentFn,
@@ -264,6 +264,8 @@ function App() {
   async function addCleaningComment(cleaningId, roomId, text) { return await addCleaningCommentFn(currentUser, db, cleaningId, roomId, text); }
 
   async function addConstructionProject(name) { await addConstructionProjectFn(db, name); }
+  async function updateConstructionProject(id, data) { await updateConstructionProjectFn(db, id, data); }
+  async function renamePhotoCategory(projectId, oldName, newName) { await renamePhotoCategoryFn(db, projectId, oldName, newName); }
   async function saveHeadcountEntry(projectId, existingId, date, rows) { await saveHeadcountEntryFn(currentUser, db, projectId, existingId, date, rows); }
   async function removeHeadcountEntry(id) { await removeHeadcountEntryFn(db, id); }
   async function addDailyLog(projectId, existingId, data) { await addDailyLogFn(currentUser, db, projectId, existingId, data); }
@@ -300,7 +302,7 @@ function App() {
   }
   if (portal === "admin") return <AdminPortal currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} db={db} onSwitch={(!HR_ONLY_ROLES.includes(role) || canConstruction) ? ()=>setPortal(null) : null} onMarkSeen={markPTOSeen} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser}/>;
   if (portal === "cleaning") return <CleaningPortal db={db} currentUser={currentUser} role={role} allPropNames={allPropNames} propColorMap={propColorMap} users={users} cleanings={cleanings} startOrJoinCleaning={startOrJoinCleaning} setItemStatus={setItemStatus} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onSwitch={()=>setPortal(null)}/>;
-  if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} addConstructionProject={addConstructionProject} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} onSwitch={()=>setPortal(null)}/>;
+  if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} addConstructionProject={addConstructionProject} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} onSwitch={()=>setPortal(null)}/>;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayTasks = visibleTasks.filter(t => t.createdAt && t.createdAt.slice(0, 10) === todayStr);

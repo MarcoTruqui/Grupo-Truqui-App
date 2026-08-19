@@ -11,6 +11,18 @@ export async function updateConstructionProject(db, id, data) {
   try { await db.collection("constructionProjects").doc(id).update(data); } catch (e) { alert("Error: " + e.message); }
 }
 
+/* Renaming a photo category needs to relabel every photo already tagged with the old
+   name too, not just the category list, or those photos would become orphaned under a
+   name that no longer exists in the picker. */
+export async function renamePhotoCategory(db, projectId, oldName, newName) {
+  try {
+    const snap = await db.collection("constructionPhotos").where("projectId", "==", projectId).where("category", "==", oldName).get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.update(d.ref, {category:newName}));
+    await batch.commit();
+  } catch (e) { alert("Error: " + e.message); }
+}
+
 /* ===== Headcount — one doc per project per day, upserted ===== */
 export async function saveHeadcountEntry(currentUser, db, projectId, existingId, date, rows) {
   const data = {projectId, date, rows, updatedBy:currentUser.name, updatedAt:new Date().toISOString()};
@@ -28,7 +40,7 @@ export async function removeHeadcountEntry(db, id) {
    stays a single entry that gets edited through the day instead of piling up duplicates.
    Once the date rolls over, the next save naturally starts a fresh doc. ===== */
 export async function addDailyLog(currentUser, db, projectId, existingId, data) {
-  const payload = {projectId, date:data.date, weather:data.weather || "", workPerformed:data.workPerformed || "", issues:data.issues || ""};
+  const payload = {projectId, date:data.date, weather:data.weather || "", workPerformed:data.workPerformed || "", issues:data.issues || "", bySubcontractor:data.bySubcontractor || []};
   try {
     if (existingId) await db.collection("constructionDailyLogs").doc(existingId).update({...payload, updatedBy:currentUser.name, updatedAt:new Date().toISOString()});
     else await db.collection("constructionDailyLogs").add({...payload, createdBy:currentUser.name, createdAt:new Date().toISOString()});

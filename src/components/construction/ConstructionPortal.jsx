@@ -5,10 +5,11 @@ import { PhotosTab } from "./PhotosTab";
 import { DocumentsTab } from "./DocumentsTab";
 import { SubcontractorsTab } from "./SubcontractorsTab";
 import { ExportReportSheet } from "./ExportReportSheet";
+import { CONSTRUCTION_PHOTO_CATEGORIES } from "../../lib/constants";
 
 const TABS = [["headcount","👷","Personal"],["log","📋","Bitácora"],["photos","📷","Fotos"],["docs","📐","Planos"],["subs","💰","Subcontratistas"]];
 
-export function ConstructionPortal({db, storage, currentUser, projects, headcount, dailyLogs, photos, documents, details, subcontractors, addConstructionProject, saveHeadcountEntry, removeHeadcountEntry, addDailyLog, removeDailyLog, addConstructionPhotos, removeConstructionPhoto, uploadConstructionDocument, removeConstructionDocument, addDetailPin, addDetailVersion, removeDetailPin, updateDetailLabel, addSubcontractor, updateSubcontractor, removeSubcontractor, addSubPayment, removeSubPayment, onSwitch}) {
+export function ConstructionPortal({db, storage, currentUser, projects, headcount, dailyLogs, photos, documents, details, subcontractors, addConstructionProject, updateConstructionProject, renamePhotoCategory, saveHeadcountEntry, removeHeadcountEntry, addDailyLog, removeDailyLog, addConstructionPhotos, removeConstructionPhoto, uploadConstructionDocument, removeConstructionDocument, addDetailPin, addDetailVersion, removeDetailPin, updateDetailLabel, addSubcontractor, updateSubcontractor, removeSubcontractor, addSubPayment, removeSubPayment, onSwitch}) {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [tab, setTab] = useState("headcount");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -84,6 +85,7 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
   const projectDetails = details.filter(det => det.projectId === activeProjectId);
   const projectSubs = subcontractors.filter(s => s.projectId === activeProjectId);
   const currentTab = TABS.find(([k]) => k === tab) || TABS[0];
+  const photoCategories = (activeProject.photoCategories && activeProject.photoCategories.length) ? activeProject.photoCategories : CONSTRUCTION_PHOTO_CATEGORIES;
 
   return <div style={{height:"100%", display:"flex", flexDirection:"column", background:"#f5f5f7"}}>
     <div style={{background:"#fff", padding:"14px 16px 12px", paddingTop:"calc(14px + env(safe-area-inset-top))", borderBottom:"0.5px solid rgba(0,0,0,0.08)", flexShrink:0}}>
@@ -104,7 +106,7 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
     <div style={{flex:1, overflowY:"auto", padding:"16px 14px 32px", WebkitOverflowScrolling:"touch"}}>
       {tab === "headcount" && <HeadcountTab projectId={activeProjectId} currentUser={currentUser} db={db} entries={projectHeadcount} subcontractors={projectSubs} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry}/>}
       {tab === "log" && <DailyLogTab projectId={activeProjectId} currentUser={currentUser} db={db} logs={projectLogs} subcontractors={projectSubs} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog}/>}
-      {tab === "photos" && <PhotosTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} photos={projectPhotos} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto}/>}
+      {tab === "photos" && <PhotosTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} photos={projectPhotos} photoCategories={photoCategories} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto}/>}
       {tab === "docs" && <DocumentsTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} documents={projectDocs} details={projectDetails} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel}/>}
       {tab === "subs" && <SubcontractorsTab projectId={activeProjectId} currentUser={currentUser} db={db} subcontractors={projectSubs} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment}/>}
     </div>
@@ -127,6 +129,6 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
       </div>
     </div>}
 
-    {exportOpen && <ExportReportSheet projectName={activeProject.name} logs={projectLogs} photos={projectPhotos} headcount={projectHeadcount} subcontractors={projectSubs} onClose={() => setExportOpen(false)}/>}
+    {exportOpen && <ExportReportSheet projectName={activeProject.name} logs={projectLogs} photos={projectPhotos} headcount={projectHeadcount} subcontractors={projectSubs} photoCategories={photoCategories} onClose={() => setExportOpen(false)}/>}
   </div>;
 }

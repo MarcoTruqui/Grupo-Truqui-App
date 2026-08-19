@@ -1,28 +1,27 @@
 import { useState } from "react";
-import { CONSTRUCTION_PHOTO_CATEGORIES } from "../../lib/constants";
 import { exportConstructionReport } from "../../lib/constructionExportPDF";
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function daysAgoISO(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
 
-export function ExportReportSheet({projectName, logs, photos, headcount, subcontractors, onClose}) {
+export function ExportReportSheet({projectName, logs, photos, headcount, subcontractors, photoCategories, onClose}) {
   const [dateFrom, setDateFrom] = useState(daysAgoISO(30));
   const [dateTo, setDateTo] = useState(todayISO());
   const [includeLogs, setIncludeLogs] = useState(true);
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeHeadcount, setIncludeHeadcount] = useState(true);
-  const [photoCategories, setPhotoCategories] = useState([...CONSTRUCTION_PHOTO_CATEGORIES]);
+  const [selectedPhotoCategories, setSelectedPhotoCategories] = useState([...photoCategories]);
   const [mode, setMode] = useState("combined");
 
   function toggleCategory(c) {
-    setPhotoCategories(cs => cs.includes(c) ? cs.filter(x => x !== c) : [...cs, c]);
+    setSelectedPhotoCategories(cs => cs.includes(c) ? cs.filter(x => x !== c) : [...cs, c]);
   }
 
   const filteredLogs = logs.filter(l => l.date >= dateFrom && l.date <= dateTo);
   const filteredHeadcount = headcount.filter(h => h.date >= dateFrom && h.date <= dateTo);
   const filteredPhotos = photos.filter(p => {
     const d = (p.uploadedAt || "").slice(0, 10);
-    return d >= dateFrom && d <= dateTo && photoCategories.includes(p.category);
+    return d >= dateFrom && d <= dateTo && selectedPhotoCategories.includes(p.category);
   });
 
   const selectedSections = [];
@@ -66,8 +65,8 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
         {includePhotos && <div className="field">
           <label>Categorías de fotos</label>
           <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
-            {CONSTRUCTION_PHOTO_CATEGORIES.map(c => {
-              const sel = photoCategories.includes(c);
+            {photoCategories.map(c => {
+              const sel = selectedPhotoCategories.includes(c);
               return <button key={c} onClick={() => toggleCategory(c)} style={{padding:"7px 12px", borderRadius:10, border:sel ? "2px solid #E87A30" : "1.5px solid #e0e0e0", background:sel ? "#FDEEE3" : "#fafafa", color:sel ? "#B75A17" : "#666", fontSize:12, cursor:"pointer", fontWeight:sel ? 700 : 400}}>{c}</button>;
             })}
           </div>

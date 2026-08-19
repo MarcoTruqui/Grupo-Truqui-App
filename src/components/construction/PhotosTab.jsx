@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CONSTRUCTION_PHOTO_CATEGORIES } from "../../lib/constants";
 import { PhotoUploadSheet } from "./PhotoUploadSheet";
+import { PhotoCategoriesSheet } from "./PhotoCategoriesSheet";
 import { ZoomLightbox } from "../shared/ZoomLightbox";
 
 function fmtDateTime(iso) {
@@ -8,19 +8,23 @@ function fmtDateTime(iso) {
   return new Date(iso).toLocaleDateString("es-MX", {day:"numeric", month:"short", hour:"numeric", minute:"2-digit"});
 }
 
-export function PhotosTab({projectId, photos, addConstructionPhotos, removeConstructionPhoto}) {
+export function PhotosTab({projectId, photos, photoCategories, updateConstructionProject, renamePhotoCategory, addConstructionPhotos, removeConstructionPhoto}) {
   const [filter, setFilter] = useState("all");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [lightbox, setLightbox] = useState(null);
 
   const shown = filter === "all" ? photos : photos.filter(p => p.category === filter);
   const sorted = [...shown].sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
 
   return <div>
-    <button className="btn-primary" style={{marginBottom:16}} onClick={() => setUploadOpen(true)}>+ Subir fotos</button>
+    <div style={{display:"flex", gap:8, marginBottom:16}}>
+      <button className="btn-primary" style={{flex:1}} onClick={() => setUploadOpen(true)}>+ Subir fotos</button>
+      <button onClick={() => setCategoriesOpen(true)} style={{background:"#f5f5f7", border:"0.5px solid rgba(0,0,0,0.12)", borderRadius:10, padding:"0 16px", fontSize:16, cursor:"pointer"}}>⚙️</button>
+    </div>
     <div className="filter-row">
       <div className={`filter-pill${filter === "all" ? " active" : ""}`} onClick={() => setFilter("all")}>Todas ({photos.length})</div>
-      {CONSTRUCTION_PHOTO_CATEGORIES.map(c => {
+      {photoCategories.map(c => {
         const n = photos.filter(p => p.category === c).length;
         return n > 0 ? <div key={c} className={`filter-pill${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c} ({n})</div> : null;
       })}
@@ -36,7 +40,8 @@ export function PhotosTab({projectId, photos, addConstructionPhotos, removeConst
         </div>
       ))}
     </div>
-    {uploadOpen && <PhotoUploadSheet projectId={projectId} addConstructionPhotos={addConstructionPhotos} onClose={() => setUploadOpen(false)}/>}
+    {uploadOpen && <PhotoUploadSheet projectId={projectId} photoCategories={photoCategories} addConstructionPhotos={addConstructionPhotos} onClose={() => setUploadOpen(false)}/>}
+    {categoriesOpen && <PhotoCategoriesSheet projectId={projectId} photoCategories={photoCategories} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} onClose={() => setCategoriesOpen(false)}/>}
     {lightbox && <ZoomLightbox src={lightbox.url} caption={`${lightbox.category}${lightbox.caption ? " — " + lightbox.caption : ""} · ${lightbox.uploadedBy}, ${fmtDateTime(lightbox.uploadedAt)}`} onClose={() => setLightbox(null)}/>}
   </div>;
 }

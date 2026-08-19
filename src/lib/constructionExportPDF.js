@@ -21,7 +21,8 @@ function buildHeader(projectName, sectionTitle, dateFrom, dateTo) {
   <div style="height:3px;background:#E87A30;border-radius:2px;margin-bottom:20px"></div>`;
 }
 
-function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak) {
+function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak, subcontractors) {
+  const subName = id => (subcontractors || []).find(s => s.id === id)?.name || "—";
   const sorted = [...logs].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const rows = sorted.map(l => `
     <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #eee">
@@ -31,6 +32,7 @@ function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak) {
       </div>
       <div style="font-size:11px;color:#aaa;margin-bottom:6px">Registrado por ${l.createdBy || "—"}</div>
       <div style="font-size:13px;color:#333;line-height:1.5">${l.workPerformed || ""}</div>
+      ${(l.bySubcontractor || []).length ? `<div style="margin-top:8px">${l.bySubcontractor.map(r => `<div style="font-size:12px;color:#555;background:#FDEEE3;border-radius:8px;padding:6px 10px;margin-top:6px"><strong style="color:#B75A17">${subName(r.subcontractorId)}:</strong> ${r.note}</div>`).join("")}</div>` : ""}
       ${l.issues ? `<div style="font-size:12px;color:#B45309;background:#FFF8E1;padding:8px 10px;border-radius:8px;margin-top:8px">⚠️ ${l.issues}</div>` : ""}
     </div>`).join("");
   return `<div style="${pageBreak ? "page-break-before:always;" : ""}">
@@ -87,9 +89,9 @@ const SECTION_BUILDERS = {logs:buildLogsSection, headcount:buildHeadcountSection
 const SECTION_LABELS = {logs:"Bitácora", headcount:"Personal", photos:"Fotos"};
 
 /* sections: [{key:"logs"|"photos"|"headcount", data:[...]}], in the order they should appear */
-export function exportConstructionReport(projectName, dateFrom, dateTo, sections) {
+export function exportConstructionReport(projectName, dateFrom, dateTo, sections, subcontractors) {
   const title = sections.length === 1 ? `${SECTION_LABELS[sections[0].key]} — ${projectName}` : `Reporte — ${projectName}`;
-  const body = sections.map((s, i) => SECTION_BUILDERS[s.key](projectName, s.data, dateFrom, dateTo, i > 0)).join("");
+  const body = sections.map((s, i) => SECTION_BUILDERS[s.key](projectName, s.data, dateFrom, dateTo, i > 0, subcontractors)).join("");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/><title>${title}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:40px}@media print{.noprint{display:none!important}}</style>

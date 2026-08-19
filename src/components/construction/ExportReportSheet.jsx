@@ -5,7 +5,7 @@ import { exportConstructionReport } from "../../lib/constructionExportPDF";
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function daysAgoISO(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
 
-export function ExportReportSheet({projectName, logs, photos, headcount, onClose}) {
+export function ExportReportSheet({projectName, logs, photos, headcount, subcontractors, onClose}) {
   const [dateFrom, setDateFrom] = useState(daysAgoISO(30));
   const [dateTo, setDateTo] = useState(todayISO());
   const [includeLogs, setIncludeLogs] = useState(true);
@@ -30,8 +30,8 @@ export function ExportReportSheet({projectName, logs, photos, headcount, onClose
   if (includePhotos) selectedSections.push({key:"photos", label:"Fotos", data:filteredPhotos});
   if (includeHeadcount) selectedSections.push({key:"headcount", label:"Personal", data:filteredHeadcount});
 
-  function generateCombined() { exportConstructionReport(projectName, dateFrom, dateTo, selectedSections); }
-  function generateOne(section) { exportConstructionReport(projectName, dateFrom, dateTo, [section]); }
+  function generateCombined() { exportConstructionReport(projectName, dateFrom, dateTo, selectedSections, subcontractors); }
+  function generateOne(section) { exportConstructionReport(projectName, dateFrom, dateTo, [section], subcontractors); }
 
   return <div className="modal-overlay" onClick={onClose}>
     <div className="modal-sheet" onClick={e => e.stopPropagation()}>

@@ -103,7 +103,7 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
 
     <div style={{flex:1, overflowY:"auto", padding:"16px 14px 32px", WebkitOverflowScrolling:"touch"}}>
       {tab === "headcount" && <HeadcountTab projectId={activeProjectId} currentUser={currentUser} db={db} entries={projectHeadcount} subcontractors={projectSubs} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry}/>}
-      {tab === "log" && <DailyLogTab projectId={activeProjectId} currentUser={currentUser} db={db} logs={projectLogs} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog}/>}
+      {tab === "log" && <DailyLogTab projectId={activeProjectId} currentUser={currentUser} db={db} logs={projectLogs} subcontractors={projectSubs} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog}/>}
       {tab === "photos" && <PhotosTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} photos={projectPhotos} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto}/>}
       {tab === "docs" && <DocumentsTab projectId={activeProjectId} currentUser={currentUser} storage={storage} db={db} documents={projectDocs} details={projectDetails} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel}/>}
       {tab === "subs" && <SubcontractorsTab projectId={activeProjectId} currentUser={currentUser} db={db} subcontractors={projectSubs} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment}/>}
@@ -127,6 +127,6 @@ export function ConstructionPortal({db, storage, currentUser, projects, headcoun
       </div>
     </div>}
 
-    {exportOpen && <ExportReportSheet projectName={activeProject.name} logs={projectLogs} photos={projectPhotos} headcount={projectHeadcount} onClose={() => setExportOpen(false)}/>}
+    {exportOpen && <ExportReportSheet projectName={activeProject.name} logs={projectLogs} photos={projectPhotos} headcount={projectHeadcount} subcontractors={projectSubs} onClose={() => setExportOpen(false)}/>}
   </div>;
 }

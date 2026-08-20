@@ -83,9 +83,7 @@ function buildPhotosSection(photos) {
   const sorted = [...photos].sort((a, b) => (a.uploadedAt || "").localeCompare(b.uploadedAt || ""));
   const cards = sorted.map(p => `
     <div style="width:31%;margin-bottom:16px;break-inside:avoid">
-      <div style="width:100%;height:140px;background:#f5f5f5;border-radius:8px;border:1px solid #eee;overflow:hidden;display:flex;align-items:center;justify-content:center">
-        <img src="${p.url}" style="max-width:100%;max-height:100%;object-fit:contain;display:block"/>
-      </div>
+      <img src="${p.url}" style="width:100%;height:140px;object-fit:cover;border-radius:8px;border:1px solid #eee"/>
       <div style="font-size:10px;color:#888;margin-top:4px">${p.category || ""}</div>
       <div style="font-size:10px;color:#aaa">${fmtDateShort(p.uploadedAt)} · ${p.uploadedBy || ""}</div>
       ${p.caption ? `<div style="font-size:10px;color:#555">${p.caption}</div>` : ""}

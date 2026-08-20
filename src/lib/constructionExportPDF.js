@@ -7,21 +7,31 @@ function fmtDateShort(iso) {
   return new Date(iso.length <= 10 ? iso + "T12:00:00" : iso).toLocaleDateString("es-MX", {day:"numeric", month:"short", year:"numeric"});
 }
 
-function buildHeader(projectName, sectionTitle, dateFrom, dateTo) {
+/* One header for the whole document — sections flow right after each other below it,
+   each marked with its own subtitle instead of repeating this block or forcing a page break. */
+function buildTopHeader(projectName, dateFrom, dateTo) {
   return `<div style="display:flex;justify-content:space-between;margin-bottom:8px">
     <div>
       <div style="font-size:24px;font-weight:700;color:#E87A30">Grupo Truqui</div>
-      <div style="font-size:13px;color:#888">${sectionTitle} — ${projectName}</div>
+      <div style="font-size:13px;color:#888">${projectName}</div>
     </div>
     <div style="text-align:right">
       <div style="font-size:13px;font-weight:600">${fmtDateShort(dateFrom)} — ${fmtDateShort(dateTo)}</div>
       <div style="font-size:11px;color:#888">Generado ${fmtDateShort(new Date().toISOString())}</div>
     </div>
   </div>
-  <div style="height:3px;background:#E87A30;border-radius:2px;margin-bottom:20px"></div>`;
+  <div style="height:3px;background:#E87A30;border-radius:2px;margin-bottom:24px"></div>`;
 }
 
-function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak, subcontractors) {
+function sectionSubtitle(icon, title) {
+  return `<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+    <span style="font-size:19px">${icon}</span>
+    <span style="font-size:16px;font-weight:700;color:#1a1a1a">${title}</span>
+  </div>
+  <div style="height:2px;background:#f0f0f0;border-radius:2px;margin-bottom:18px"></div>`;
+}
+
+function buildLogsSection(logs, subcontractors) {
   const subName = id => (subcontractors || []).find(s => s.id === id)?.name || "—";
   const sorted = [...logs].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const rows = sorted.map(l => `
@@ -35,16 +45,16 @@ function buildLogsSection(projectName, logs, dateFrom, dateTo, pageBreak, subcon
       ${(l.bySubcontractor || []).length ? `<div style="margin-top:8px">${l.bySubcontractor.map(r => `<div style="font-size:12px;color:#555;background:#FDEEE3;border-radius:8px;padding:6px 10px;margin-top:6px"><strong style="color:#B75A17">${subName(r.subcontractorId)}:</strong> ${r.note}</div>`).join("")}</div>` : ""}
       ${l.issues ? `<div style="font-size:12px;color:#B45309;background:#FFF8E1;padding:8px 10px;border-radius:8px;margin-top:8px">⚠️ ${l.issues}</div>` : ""}
     </div>`).join("");
-  return `<div style="${pageBreak ? "page-break-before:always;" : ""}">
-    ${buildHeader(projectName, "Bitácora Diaria", dateFrom, dateTo)}
-    ${sorted.length ? rows : '<div style="text-align:center;color:#aaa;padding:40px">Sin bitácoras en este rango de fechas.</div>'}
+  return `<div style="margin-bottom:32px">
+    ${sectionSubtitle("📋", "Bitácora de Actividad Diaria")}
+    ${sorted.length ? rows : '<div style="text-align:center;color:#aaa;padding:30px">Sin bitácoras en este rango de fechas.</div>'}
   </div>`;
 }
 
 /* Vertical, one date-block per entry with subcontractors listed as stacked rows underneath —
    deliberately not a wide table, since the column count would grow with every new
    subcontractor and stop fitting a printed page. */
-function buildHeadcountSection(projectName, entries, dateFrom, dateTo, pageBreak) {
+function buildHeadcountSection(entries) {
   const sorted = [...entries].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const blocks = sorted.map(e => {
     const total = (e.rows || []).reduce((s, r) => s + (Number(r.count) || 0), 0);
@@ -62,14 +72,14 @@ function buildHeadcountSection(projectName, entries, dateFrom, dateTo, pageBreak
       </div>`;
   }).join("");
   const grandTotal = sorted.reduce((s, e) => s + (e.rows || []).reduce((a, r) => a + (Number(r.count) || 0), 0), 0);
-  return `<div style="${pageBreak ? "page-break-before:always;" : ""}">
-    ${buildHeader(projectName, "Registro de Personal", dateFrom, dateTo)}
+  return `<div style="margin-bottom:32px">
+    ${sectionSubtitle("👷", "Registro de Personal")}
     ${sorted.length ? `${blocks}<div style="margin-top:10px;text-align:right;font-size:14px;font-weight:700">Total del periodo: ${grandTotal}</div>`
-    : '<div style="text-align:center;color:#aaa;padding:40px">Sin registros de personal en este rango de fechas.</div>'}
+    : '<div style="text-align:center;color:#aaa;padding:30px">Sin registros de personal en este rango de fechas.</div>'}
   </div>`;
 }
 
-function buildPhotosSection(projectName, photos, dateFrom, dateTo, pageBreak) {
+function buildPhotosSection(photos) {
   const sorted = [...photos].sort((a, b) => (a.uploadedAt || "").localeCompare(b.uploadedAt || ""));
   const cards = sorted.map(p => `
     <div style="width:31%;margin-bottom:16px;break-inside:avoid">
@@ -78,9 +88,9 @@ function buildPhotosSection(projectName, photos, dateFrom, dateTo, pageBreak) {
       <div style="font-size:10px;color:#aaa">${fmtDateShort(p.uploadedAt)} · ${p.uploadedBy || ""}</div>
       ${p.caption ? `<div style="font-size:10px;color:#555">${p.caption}</div>` : ""}
     </div>`).join("");
-  return `<div style="${pageBreak ? "page-break-before:always;" : ""}">
-    ${buildHeader(projectName, "Fotos de Avance", dateFrom, dateTo)}
-    ${sorted.length ? `<div style="display:flex;flex-wrap:wrap;gap:2%">${cards}</div>` : '<div style="text-align:center;color:#aaa;padding:40px">Sin fotos en este rango de fechas.</div>'}
+  return `<div style="margin-bottom:32px">
+    ${sectionSubtitle("📷", "Reporte Fotográfico")}
+    ${sorted.length ? `<div style="display:flex;flex-wrap:wrap;gap:2%">${cards}</div>` : '<div style="text-align:center;color:#aaa;padding:30px">Sin fotos en este rango de fechas.</div>'}
   </div>`;
 }
 
@@ -88,13 +98,15 @@ const SECTION_BUILDERS = {logs:buildLogsSection, headcount:buildHeadcountSection
 const SECTION_LABELS = {logs:"Bitácora", headcount:"Personal", photos:"Fotos"};
 
 /* sections: [{key:"logs"|"photos"|"headcount", data:[...]}], in the order they should appear.
+   Sections flow one after another (no forced page break) under a single shared header, each
+   marked with its own subtitle so they're still easy to tell apart.
    Opens via a Blob + real <a> click instead of window.open("", "_blank") + document.write —
    the latter gets silently blocked by mobile Safari/Chrome's popup blocker because it treats
    a scripted window.open to a blank window as a popup, while a genuine anchor click with
    target="_blank" is treated as normal link navigation and isn't blocked. */
 export function exportConstructionReport(projectName, dateFrom, dateTo, sections, subcontractors) {
   const title = sections.length === 1 ? `${SECTION_LABELS[sections[0].key]} — ${projectName}` : `Reporte — ${projectName}`;
-  const body = sections.map((s, i) => SECTION_BUILDERS[s.key](projectName, s.data, dateFrom, dateTo, i > 0, subcontractors)).join("");
+  const body = sections.map(s => SECTION_BUILDERS[s.key](s.data, subcontractors)).join("");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${title}</title>
 <style>
@@ -109,6 +121,7 @@ body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:24px 24px 60px}
   <button onclick="window.close()" style="background:#f5f5f5;color:#555;border:0.5px solid rgba(0,0,0,0.15)">‹ Cerrar</button>
   <button onclick="window.print()" style="background:#E87A30;color:#fff">Imprimir / Guardar PDF</button>
 </div>
+${buildTopHeader(projectName, dateFrom, dateTo)}
 ${body}
 </body></html>`;
   const blob = new Blob([html], {type:"text/html"});

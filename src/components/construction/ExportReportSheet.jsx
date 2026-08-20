@@ -3,6 +3,14 @@ import { exportConstructionReport } from "../../lib/constructionExportPDF";
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function daysAgoISO(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
+function startOfWeekISO() { const d = new Date(); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d.toISOString().slice(0, 10); }
+function startOfMonthISO() { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); }
+
+const QUICK_RANGES = [
+  ["today", "Hoy", () => [todayISO(), todayISO()]],
+  ["week", "Esta semana", () => [startOfWeekISO(), todayISO()]],
+  ["month", "Este mes", () => [startOfMonthISO(), todayISO()]]
+];
 
 export function ExportReportSheet({projectName, logs, photos, headcount, subcontractors, photoCategories, onClose}) {
   const [dateFrom, setDateFrom] = useState(daysAgoISO(30));
@@ -38,6 +46,17 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
       <div className="modal-sheet-scroll">
         <div className="modal-title">Exportar reporte</div>
         <div className="modal-sub">Elige el rango de fechas y qué incluir</div>
+
+        <div className="field">
+          <label>Rango rápido</label>
+          <div style={{display:"flex", gap:8}}>
+            {QUICK_RANGES.map(([key, label, getRange]) => {
+              const [from, to] = getRange();
+              const active = dateFrom === from && dateTo === to;
+              return <button key={key} onClick={() => { setDateFrom(from); setDateTo(to); }} style={{flex:1, padding:"8px 0", borderRadius:10, border:active ? "2px solid #E87A30" : "1.5px solid #e0e0e0", background:active ? "#FDEEE3" : "#fafafa", color:active ? "#B75A17" : "#666", fontSize:12, fontWeight:active ? 700 : 400, cursor:"pointer"}}>{label}</button>;
+            })}
+          </div>
+        </div>
 
         <div style={{display:"flex", gap:10}}>
           <div className="field" style={{flex:1}}><label>Desde</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}/></div>

@@ -13,6 +13,7 @@ import {
   addCleaningComment as addCleaningCommentFn
 } from "./lib/firestoreHelpers";
 import { getOccupancy as getOccupancyFn, getPropBookingDetails as getPropBookingDetailsFn } from "./lib/bookingHelpers";
+import { todayISO } from "./lib/dateHelpers";
 import {
   addConstructionProject as addConstructionProjectFn, updateConstructionProject as updateConstructionProjectFn, renamePhotoCategory as renamePhotoCategoryFn, saveHeadcountEntry as saveHeadcountEntryFn,
   removeHeadcountEntry as removeHeadcountEntryFn, addDailyLog as addDailyLogFn, removeDailyLog as removeDailyLogFn,
@@ -304,7 +305,7 @@ function App() {
   if (portal === "cleaning") return <CleaningPortal db={db} currentUser={currentUser} role={role} allPropNames={allPropNames} propColorMap={propColorMap} users={users} cleanings={cleanings} startOrJoinCleaning={startOrJoinCleaning} setItemStatus={setItemStatus} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onSwitch={()=>setPortal(null)}/>;
   if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} addConstructionProject={addConstructionProject} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} onSwitch={()=>setPortal(null)}/>;
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = todayISO();
   const todayTasks = visibleTasks.filter(t => t.createdAt && t.createdAt.slice(0, 10) === todayStr);
   const filteredTasks = sortT(filterS(filter === "all" ? visibleTasks : visibleTasks.filter(t => t.status === filter)));
   const propTasks = activeProp ? visibleTasks.filter(t => t.property === activeProp) : [];

@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { todayISO } from "../../lib/dateHelpers";
 
-function todayISO() { return new Date().toISOString().slice(0, 10); }
 function fmtMoney(n) { return "$" + (Number(n) || 0).toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function fmtDate(iso) { if (!iso) return ""; return new Date(iso + "T12:00:00").toLocaleDateString("es-MX", {day:"numeric", month:"short", year:"numeric"}); }
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { todayISO } from "../../lib/dateHelpers";
 
-function todayISO() { return new Date().toISOString().slice(0, 10); }
 const WEATHER_OPTIONS = ["Soleado", "Nublado", "Lluvia", "Tormenta", "Viento fuerte"];
 
 export function DailyLogSheet({projectId, log, previousLog, subcontractors, addDailyLog, onClose}) {

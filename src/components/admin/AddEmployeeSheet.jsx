@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { ROLE_META, COLOR_FRAMES } from "../../lib/constants";
+import { todayISO } from "../../lib/dateHelpers";
 
 const EMPLOYEE_ROLE_COLORS = {admin:"#534AB7", supervisor:"#1D9E75", maintenance:"#BA7517", cleaning:"#378ADD", office:"#D14D8A", construction:"#E87A30", purchasing:"#0D9DA7"};
 const ROLE_ORDER = ["admin", "supervisor", "maintenance", "cleaning", "office", "construction", "purchasing"];
-
-function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 export function AddEmployeeSheet({allPropNames, propColorMap, addUser, onClose}) {
   const [name, setName] = useState("");

@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-function todayISO() { return new Date().toISOString().slice(0, 10); }
+import { todayISO } from "../../lib/dateHelpers";
 
 function rowFromExisting(r, subcontractors) {
   const match = subcontractors.find(s => s.name === r.trade);

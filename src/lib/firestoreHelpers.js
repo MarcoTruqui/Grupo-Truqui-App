@@ -3,6 +3,7 @@ import "firebase/compat/firestore";
 import "firebase/compat/auth";
 import { buildRoomChecklist, buildDailyChecklist, STATUS_LABEL, FAKE_DOMAIN } from "./constants";
 import { firebaseConfig } from "./firebase";
+import { todayISO } from "./dateHelpers";
 
 export function getVacationDaysBySeniority(hireDate) {
   if (!hireDate) return null;
@@ -428,7 +429,7 @@ export async function addUser(db, data) {
     await secondaryApp.auth().createUserWithEmailAndPassword(email, data.password);
     await db.collection("users").add({
       name:data.name, username, role:data.role, properties:data.properties || [],
-      email, hireDate:data.hireDate || new Date().toISOString().slice(0, 10),
+      email, hireDate:data.hireDate || todayISO(),
       createdAt:new Date().toISOString()
     });
   } catch (e) {

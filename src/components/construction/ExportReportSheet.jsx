@@ -1,10 +1,6 @@
 import { useState } from "react";
 import { exportConstructionReport } from "../../lib/constructionExportPDF";
-
-function todayISO() { return new Date().toISOString().slice(0, 10); }
-function daysAgoISO(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
-function startOfWeekISO() { const d = new Date(); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d.toISOString().slice(0, 10); }
-function startOfMonthISO() { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); }
+import { todayISO, daysAgoISO, startOfWeekISO, startOfMonthISO } from "../../lib/dateHelpers";
 
 const QUICK_RANGES = [
   ["today", "Hoy", () => [todayISO(), todayISO()]],

@@ -51,30 +51,32 @@ function buildLogsSection(logs, subcontractors) {
   </div>`;
 }
 
-/* Vertical, one date-block per entry with subcontractors listed as stacked rows underneath —
-   deliberately not a wide table, since the column count would grow with every new
-   subcontractor and stop fitting a printed page. */
+/* One date-block per entry, with each subcontractor/trade shown as a small square "bubble"
+   (count large, trade label small underneath) instead of a stacked list of rows — wraps
+   naturally so nothing needs to be scanned off to the side. Grand total sits at the top of
+   the section instead of buried at the bottom. */
 function buildHeadcountSection(entries) {
   const sorted = [...entries].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  const grandTotal = sorted.reduce((s, e) => s + (e.rows || []).reduce((a, r) => a + (Number(r.count) || 0), 0), 0);
   const blocks = sorted.map(e => {
     const total = (e.rows || []).reduce((s, r) => s + (Number(r.count) || 0), 0);
-    const tradeRows = (e.rows || []).map(r => `
-      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#444;border-bottom:1px dashed #f0f0f0">
-        <span>${r.trade}</span><span style="font-weight:600">${r.count}</span>
+    const chips = (e.rows || []).map(r => `
+      <div style="width:74px;height:74px;border-radius:12px;background:#FDEEE3;border:1px solid #F3C9A6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px;break-inside:avoid">
+        <div style="font-size:19px;font-weight:800;color:#E87A30;line-height:1">${r.count}</div>
+        <div style="font-size:9px;color:#B75A17;margin-top:4px;line-height:1.25;word-break:break-word">${r.trade}</div>
       </div>`).join("");
     return `
       <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #eee">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:14px;font-weight:700">${fmtDate(e.date)}</div>
           <div style="font-size:14px;font-weight:700;color:#E87A30">${total} total</div>
         </div>
-        ${tradeRows}
+        <div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>
       </div>`;
   }).join("");
-  const grandTotal = sorted.reduce((s, e) => s + (e.rows || []).reduce((a, r) => a + (Number(r.count) || 0), 0), 0);
   return `<div style="margin-bottom:32px">
     ${sectionSubtitle("👷", "Registro de Personal")}
-    ${sorted.length ? `${blocks}<div style="margin-top:10px;text-align:right;font-size:14px;font-weight:700">Total del periodo: ${grandTotal}</div>`
+    ${sorted.length ? `<div style="text-align:right;font-size:16px;font-weight:800;color:#E87A30;margin-bottom:14px">Total del periodo: ${grandTotal}</div>${blocks}`
     : '<div style="text-align:center;color:#aaa;padding:30px">Sin registros de personal en este rango de fechas.</div>'}
   </div>`;
 }

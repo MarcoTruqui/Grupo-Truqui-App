@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { exportConstructionReport } from "../../lib/constructionExportPDF";
-import { todayISO, daysAgoISO, startOfWeekISO, startOfMonthISO } from "../../lib/dateHelpers";
+import { todayISO, daysAgoISO, startOfWeekISO, startOfMonthISO, localDateISO } from "../../lib/dateHelpers";
 
 const QUICK_RANGES = [
   ["today", "Hoy", () => [todayISO(), todayISO()]],
@@ -24,14 +24,14 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
   const filteredLogs = logs.filter(l => l.date >= dateFrom && l.date <= dateTo);
   const filteredHeadcount = headcount.filter(h => h.date >= dateFrom && h.date <= dateTo);
   const filteredPhotos = photos.filter(p => {
-    const d = (p.uploadedAt || "").slice(0, 10);
+    const d = localDateISO(p.uploadedAt);
     return d >= dateFrom && d <= dateTo && selectedPhotoCategories.includes(p.category);
   });
 
   const selectedSections = [];
+  if (includeHeadcount) selectedSections.push({key:"headcount", label:"Personal", data:filteredHeadcount});
   if (includeLogs) selectedSections.push({key:"logs", label:"Bitácora", data:filteredLogs});
   if (includePhotos) selectedSections.push({key:"photos", label:"Fotos", data:filteredPhotos});
-  if (includeHeadcount) selectedSections.push({key:"headcount", label:"Personal", data:filteredHeadcount});
 
   function generateCombined() { exportConstructionReport(projectName, dateFrom, dateTo, selectedSections, subcontractors); }
   function generateOne(section) { exportConstructionReport(projectName, dateFrom, dateTo, [section], subcontractors); }
@@ -63,9 +63,9 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
           <label>Incluir</label>
           <div style={{display:"flex", flexDirection:"column", gap:8}}>
             {[
+              ["headcount", "Personal", filteredHeadcount.length, includeHeadcount, setIncludeHeadcount],
               ["logs", "Bitácora", filteredLogs.length, includeLogs, setIncludeLogs],
-              ["photos", "Fotos", filteredPhotos.length, includePhotos, setIncludePhotos],
-              ["headcount", "Personal", filteredHeadcount.length, includeHeadcount, setIncludeHeadcount]
+              ["photos", "Fotos", filteredPhotos.length, includePhotos, setIncludePhotos]
             ].map(([key, label, count, checked, setChecked]) => (
               <div key={key} onClick={() => setChecked(v => !v)} style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer", padding:"10px 12px", borderRadius:10, background:checked ? "#EAF3DE" : "#fafafa", border:checked ? "1.5px solid #1D9E75" : "1.5px solid #e0e0e0"}}>
                 <div style={{width:20, height:20, borderRadius:6, border:checked ? "none" : "1.5px solid #ccc", background:checked ? "#1D9E75" : "#fff", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>

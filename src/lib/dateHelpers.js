@@ -10,6 +10,10 @@ export function todayISO() { return localISO(new Date()); }
 export function daysAgoISO(n) { const d = new Date(); d.setDate(d.getDate() - n); return localISO(d); }
 export function startOfWeekISO() { const d = new Date(); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return localISO(d); }
 export function startOfMonthISO() { const d = new Date(); d.setDate(1); return localISO(d); }
+/* Same local-date fix, but for converting an existing full timestamp (e.g. a stored
+   uploadedAt) down to its local calendar date — .slice(0,10) on that timestamp
+   would give the UTC date instead, same bug as above. */
+export function localDateISO(iso) { if (!iso) return ""; return localISO(new Date(iso)); }
 
 export function fmtDate(iso) {
   if (!iso) return "";

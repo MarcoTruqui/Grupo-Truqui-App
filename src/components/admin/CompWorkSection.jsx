@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ROLE_META } from "../../lib/constants";
 import { getCompBalance, submitCompWork, submitCompRequest } from "../../lib/firestoreHelpers";
 import { Av } from "../shared/Avatar";
 import { PTOCalendar } from "./PTOCalendar";
+import { TeamVacationCalendar } from "./TeamVacationCalendar";
 import { WorkCard } from "./WorkCard";
 import { ReqCard } from "./ReqCard";
 
-export function CompWorkSection({currentUser,role,users,compWork,compRequests,db,onBack,onSwitch,allPropNames}) {
-  const [tab,setTab] = useState("register");
+export function CompWorkSection({currentUser,role,users,compWork,compRequests,db,onBack,onSwitch,allPropNames,onMarkSeen}) {
+  useEffect(()=>{ if(onMarkSeen) onMarkSeen(); },[]);
+  const isAdmin=role==="admin";
+  const [tab,setTab] = useState(isAdmin?"pending":"register");
   const [workDate,setWorkDate] = useState("");
   const [workType,setWorkType] = useState("sunday");
   const [workReason,setWorkReason] = useState("");
@@ -26,7 +29,6 @@ export function CompWorkSection({currentUser,role,users,compWork,compRequests,db
   const [adminRevDays,setAdminRevDays] = useState(1.5);
   const [cancelId,setCancelId] = useState(null);
 
-  const isAdmin=role==="admin";
   const isSupervisor=role==="supervisor";
   const isWorker=["maintenance","cleaning"].includes(role);
 
@@ -40,6 +42,12 @@ export function CompWorkSection({currentUser,role,users,compWork,compRequests,db
   const toReviewReq=isSupervisor?compRequests.filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor"):[];
   const adminWorkReview=isAdmin?compWork.filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).sort((a,b)=>a.submittedAt.localeCompare(b.submittedAt)):[];
   const adminReqReview=isAdmin?compRequests.filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).sort((a,b)=>a.submittedAt.localeCompare(b.submittedAt)):[];
+  const adminWorkApproved=isAdmin?compWork.filter(r=>r.status==="approved").sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt)):[];
+  const adminReqApproved=isAdmin?compRequests.filter(r=>r.status==="approved").sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt)):[];
+  const adminWorkDenied=isAdmin?compWork.filter(r=>r.status==="declined").sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt)):[];
+  const adminReqDenied=isAdmin?compRequests.filter(r=>r.status==="declined").sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt)):[];
+  const adminWorkAll=isAdmin?[...compWork].sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt)):[];
+  const adminReqAll=isAdmin?[...compRequests].sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt)):[];
 
   function fmtDate(iso){if(!iso)return"";return new Date(iso).toLocaleDateString("es-MX",{day:"numeric",month:"short",year:"numeric"});}
   function fmtDay(iso){if(!iso)return"";return new Date(iso+"T12:00:00").toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short"});}
@@ -65,11 +73,13 @@ export function CompWorkSection({currentUser,role,users,compWork,compRequests,db
 
   const cardProps = {currentUser,db,fmtDate,fmtDay,isSupervisor,isAdmin,reviewId,setReviewId,reviewComment,setReviewComment,adminRevId,setAdminRevId,adminRevComment,setAdminRevComment,adminRevDays,setAdminRevDays,cancelId,setCancelId};
 
-  const tabs = isAdmin||isSupervisor
+  const tabs = isAdmin
+    ? [["pending",`Por aprobar (${adminWorkReview.length+adminReqReview.length})`],["approved","Aprobadas"],["denied","Denegadas"],["all","Todas"],["calendar","Calendario"]]
+    : isSupervisor
     ? [["review","Por aprobar"],["register","Registrar"],["use","Usar días"],["history","Historial"]]
     : [["register","Registrar"],["use","Usar días"],["history","Historial"]];
 
-  const pendingCount=(isAdmin?adminWorkReview.length+adminReqReview.length:0)+(isSupervisor?toReviewWork.length+toReviewReq.length:0);
+  const pendingCount=isSupervisor?toReviewWork.length+toReviewReq.length:0;
 
   return <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f5f5f7"}}>
     <div style={{background:"#fff",padding:"14px 16px 12px",paddingTop:"calc(14px + env(safe-area-inset-top))",borderBottom:"0.5px solid rgba(0,0,0,0.08)",flexShrink:0}}>
@@ -160,14 +170,64 @@ export function CompWorkSection({currentUser,role,users,compWork,compRequests,db
         {myReqs.length>0&&<><div className="section-label" style={{marginTop:8}}>Mis días solicitados</div>{myReqs.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}</>}
       </>}
 
-      {/* REVIEW TAB — supervisor / admin */}
-      {tab==="review"&&(isSupervisor||isAdmin)&&<>
+      {/* REVIEW TAB — supervisor only (admin uses the pending/approved/denied/all tabs below) */}
+      {tab==="review"&&isSupervisor&&<>
         <div className="section-label">Días trabajados por confirmar</div>
-        {(isAdmin?adminWorkReview:toReviewWork).length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin registros pendientes</div>}
-        {(isAdmin?adminWorkReview:toReviewWork).map(r=><WorkCard key={r.id} r={r} {...cardProps}/>)}
+        {toReviewWork.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin registros pendientes</div>}
+        {toReviewWork.map(r=><WorkCard key={r.id} r={r} {...cardProps}/>)}
         <div className="section-label" style={{marginTop:8}}>Solicitudes de días libres</div>
-        {(isAdmin?adminReqReview:toReviewReq).length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes pendientes</div>}
-        {(isAdmin?adminReqReview:toReviewReq).map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
+        {toReviewReq.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes pendientes</div>}
+        {toReviewReq.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
+        <div className="section-label" style={{marginTop:8}}>Balances del personal</div>
+        {users.filter(u=>["maintenance","cleaning"].includes(u.role)).map(u=>{
+          const b=getCompBalance(u.id,compWork,compRequests,users);
+          return <div key={u.id} style={{background:"#fff",borderRadius:12,padding:12,marginBottom:8,border:"0.5px solid rgba(0,0,0,0.07)",display:"flex",alignItems:"center",gap:12}}>
+            <Av name={u.name} size={36} bg={ROLE_META[u.role]?.bg||"#888"}/>
+            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{u.name}</div><div style={{fontSize:11,color:"#888"}}>{ROLE_META[u.role]?.label}</div></div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,textAlign:"center"}}>
+              {[["Ganados",b.earned,"#534AB7"],["Usados",b.used,"#BA7517"],["Disp.",b.available,"#1D9E75"]].map(([l,v,c])=>
+                <div key={l}><div style={{fontSize:16,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:"#aaa"}}>{l}</div></div>
+              )}
+            </div>
+          </div>;
+        })}
+      </>}
+
+      {/* PENDING / APPROVED / DENIED / ALL / CALENDAR TABS — admin only */}
+      {isAdmin&&tab==="pending"&&<>
+        <div className="section-label">Días trabajados por confirmar</div>
+        {adminWorkReview.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin registros pendientes</div>}
+        {adminWorkReview.map(r=><WorkCard key={r.id} r={r} {...cardProps}/>)}
+        <div className="section-label" style={{marginTop:8}}>Solicitudes de días libres</div>
+        {adminReqReview.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes pendientes</div>}
+        {adminReqReview.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
+      </>}
+      {isAdmin&&tab==="approved"&&<>
+        <div className="section-label">Días trabajados aprobados</div>
+        {adminWorkApproved.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin registros aprobados aún</div>}
+        {adminWorkApproved.map(r=><WorkCard key={r.id} r={r} {...cardProps}/>)}
+        <div className="section-label" style={{marginTop:8}}>Solicitudes de días libres aprobadas</div>
+        {adminReqApproved.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes aprobadas aún</div>}
+        {adminReqApproved.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
+      </>}
+      {isAdmin&&tab==="denied"&&<>
+        <div className="section-label">Días trabajados denegados</div>
+        {adminWorkDenied.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin registros denegados</div>}
+        {adminWorkDenied.map(r=><WorkCard key={r.id} r={r} {...cardProps}/>)}
+        <div className="section-label" style={{marginTop:8}}>Solicitudes de días libres denegadas</div>
+        {adminReqDenied.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes denegadas</div>}
+        {adminReqDenied.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
+      </>}
+      {isAdmin&&tab==="all"&&<>
+        <div className="section-label">Días trabajados</div>
+        {adminWorkAll.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin registros aún</div>}
+        {adminWorkAll.map(r=><WorkCard key={r.id} r={r} {...cardProps}/>)}
+        <div className="section-label" style={{marginTop:8}}>Solicitudes de días libres</div>
+        {adminReqAll.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes aún</div>}
+        {adminReqAll.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
+      </>}
+      {isAdmin&&tab==="calendar"&&<TeamVacationCalendar users={users} compRequests={compRequests} compWork={compWork}/>}
+      {isAdmin&&tab!=="calendar"&&<>
         <div className="section-label" style={{marginTop:8}}>Balances del personal</div>
         {users.filter(u=>["maintenance","cleaning"].includes(u.role)).map(u=>{
           const b=getCompBalance(u.id,compWork,compRequests,users);

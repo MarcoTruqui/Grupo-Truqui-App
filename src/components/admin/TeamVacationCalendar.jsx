@@ -9,13 +9,13 @@ function buildWeekSegments(weekKeyRow, dayMap) {
     const key = weekKeyRow[col];
     const peopleToday = key ? (dayMap[key] || []) : [];
     const presentMap = {};
-    peopleToday.forEach(p => { presentMap[p.userId] = p; });
-    Object.keys(open).forEach(uid => {
-      if (!presentMap[uid]) { segments.push(open[uid]); delete open[uid]; }
+    peopleToday.forEach(p => { presentMap[p.key] = p; });
+    Object.keys(open).forEach(k => {
+      if (!presentMap[k]) { segments.push(open[k]); delete open[k]; }
     });
     Object.values(presentMap).forEach(p => {
-      if (open[p.userId]) { open[p.userId].endCol = col; open[p.userId].endDate = key; }
-      else { open[p.userId] = {userId:p.userId, name:p.name, role:p.role, status:p.status, startCol:col, endCol:col, startDate:key, endDate:key}; }
+      if (open[p.key]) { open[p.key].endCol = col; open[p.key].endDate = key; }
+      else { open[p.key] = {userId:p.userId, name:p.name, role:p.role, status:p.status, color:p.color, sourceLabel:p.sourceLabel, startCol:col, endCol:col, startDate:key, endDate:key}; }
     });
   }
   Object.values(open).forEach(seg => segments.push(seg));
@@ -31,7 +31,19 @@ function buildWeekSegments(weekKeyRow, dayMap) {
   return sorted;
 }
 
-export function TeamVacationCalendar({users, ptoRequests}) {
+/* Vacation days are colored per-role (via ROLE_META). Comp-work-derived days (days taken off
+   using earned comp time, and days actually worked extra) use a fixed color per source instead,
+   so they read as their own category regardless of whose bar it is — same Gantt-bar format,
+   just a different, consistent color. Segments are keyed by source+user so a person's vacation
+   bar never merges with their comp-day bar even in the same week. */
+/* Deliberately outside ROLE_META's palette (admin/supervisor/maintenance/cleaning/office/
+   construction/purchasing) so a comp-day bar never happens to render in the exact same
+   color as some role's vacation bar — e.g. maintenance's role color is #BA7517, which
+   would have been indistinguishable from a fixed amber comp-day color. */
+const COMP_REQ_COLOR = "#C2185B";
+const COMP_WORK_COLOR = "#1E3A8A";
+
+export function TeamVacationCalendar({users, ptoRequests=[], compRequests=[], compWork=[]}) {
   const [vm, setVm] = useState(() => { const d = new Date(); return {y:d.getFullYear(), m:d.getMonth()}; });
   const [selectedBlock, setSelectedBlock] = useState(null);
   const {y, m} = vm;
@@ -45,10 +57,28 @@ export function TeamVacationCalendar({users, ptoRequests}) {
   function next(){if(m===11)setVm({y:y+1,m:0});else setVm({y,m:m+1});}
 
   const dayMap = {};
+  function pushEntry(d, entry) { (dayMap[d] = dayMap[d] || []).push(entry); }
+  const ELIGIBLE = ["approved","pending_supervisor","pending_admin"];
+
   ptoRequests.forEach(r => {
-    if (!["approved","pending_supervisor","pending_admin"].includes(r.status)) return;
-    (r.selectedDays||[]).forEach(d => {
-      (dayMap[d] = dayMap[d] || []).push({userId:r.userId, name:r.userName, role:r.userRole, status:r.status});
+    if (!ELIGIBLE.includes(r.status)) return;
+    (r.selectedDays||[]).forEach(d => pushEntry(d, {
+      key:`pto_${r.userId}`, userId:r.userId, name:r.userName, role:r.userRole, status:r.status,
+      color:(ROLE_META[r.userRole]||{}).bg||"#888", sourceLabel:"Vacación"
+    }));
+  });
+  compRequests.forEach(r => {
+    if (!ELIGIBLE.includes(r.status)) return;
+    (r.selectedDays||[]).forEach(d => pushEntry(d, {
+      key:`compreq_${r.userId}`, userId:r.userId, name:r.userName, role:r.userRole, status:r.status,
+      color:COMP_REQ_COLOR, sourceLabel:"Día compensatorio"
+    }));
+  });
+  compWork.forEach(r => {
+    if (!ELIGIBLE.includes(r.status) || !r.workDate) return;
+    pushEntry(r.workDate, {
+      key:`compwork_${r.userId}`, userId:r.userId, name:r.userName, role:r.userRole, status:r.status,
+      color:COMP_WORK_COLOR, sourceLabel:"Día extra trabajado"
     });
   });
 
@@ -57,7 +87,9 @@ export function TeamVacationCalendar({users, ptoRequests}) {
   const weekKeys = weeks.map(week => week.map(d => d ? `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}` : null));
 
   const monthPrefix = `${y}-${String(m+1).padStart(2,"0")}-`;
-  const rolesInView = [...new Set(Object.entries(dayMap).filter(([k]) => k.startsWith(monthPrefix)).flatMap(([,v]) => v).map(p => p.role))];
+  const monthEntries = Object.entries(dayMap).filter(([k]) => k.startsWith(monthPrefix)).flatMap(([,v]) => v);
+  const rolesInView = [...new Set(monthEntries.filter(p => p.sourceLabel==="Vacación").map(p => p.role))];
+  const extraSourcesInView = [...new Map(monthEntries.filter(p => p.sourceLabel!=="Vacación").map(p => [p.sourceLabel, p.color])).entries()];
 
   return <div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
@@ -77,10 +109,9 @@ export function TeamVacationCalendar({users, ptoRequests}) {
         </div>
         {laneCount>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gridAutoRows:20,gap:"2px 3px"}}>
           {segments.map((seg,si)=>{
-            const meta=ROLE_META[seg.role]||{bg:"#888"};
             return <div key={si} onClick={()=>setSelectedBlock(seg)}
               style={{gridColumn:`${seg.startCol+1} / ${seg.endCol+2}`, gridRow:seg.lane+1,
-                background:meta.bg, opacity:seg.status==="approved"?1:0.55, color:"#fff",
+                background:seg.color, opacity:seg.status==="approved"?1:0.55, color:"#fff",
                 borderRadius:5, fontSize:10, fontWeight:600, padding:"0 6px",
                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                 cursor:"pointer", display:"flex", alignItems:"center"}}>
@@ -95,7 +126,10 @@ export function TeamVacationCalendar({users, ptoRequests}) {
         const meta=ROLE_META[role]||{label:role,bg:"#888"};
         return <div key={role} style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:9,height:9,borderRadius:3,background:meta.bg}}/> {meta.label}</div>;
       })}
-      {rolesInView.length>0&&<div style={{display:"flex",alignItems:"center",gap:4,opacity:0.55}}><div style={{width:9,height:9,borderRadius:3,background:"#888"}}/> Pendiente (más claro)</div>}
+      {extraSourcesInView.map(([label,color])=>
+        <div key={label} style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:9,height:9,borderRadius:3,background:color}}/> {label}</div>
+      )}
+      {monthEntries.length>0&&<div style={{display:"flex",alignItems:"center",gap:4,opacity:0.55}}><div style={{width:9,height:9,borderRadius:3,background:"#888"}}/> Pendiente (más claro)</div>}
     </div>
     {selectedBlock&&<BlockDetailModal block={selectedBlock} onClose={()=>setSelectedBlock(null)}/>}
   </div>;

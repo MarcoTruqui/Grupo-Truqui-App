@@ -22,7 +22,10 @@ export function BlockDetailModal({block, onClose}) {
         <div className="modal-sub" style={{textTransform:"capitalize",marginTop:10}}>
           {sameDay ? fmtDayFull(block.startDate) : <>{fmtDayFull(block.startDate)} → {fmtDayFull(block.endDate)}</>}
         </div>
-        <div style={{marginTop:10}}><PTOStatusBadge status={block.status}/></div>
+        <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <PTOStatusBadge status={block.status}/>
+          {block.sourceLabel&&block.sourceLabel!=="Vacación"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:block.color,color:"#fff"}}>{block.sourceLabel}</span>}
+        </div>
       </div>
       <div className="modal-sheet-bottom">
         <div className="btn-row"><button className="btn-secondary" onClick={onClose} style={{width:"100%"}}>Cerrar</button></div>

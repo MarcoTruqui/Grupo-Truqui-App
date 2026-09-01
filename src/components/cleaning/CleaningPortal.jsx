@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { COLOR_FRAMES, CLEANING_TYPE_LABEL } from "../../lib/constants";
-import { fmtDate } from "../../lib/dateHelpers";
+import { fmtDate, todayISO, localDateISO } from "../../lib/dateHelpers";
 import { CleaningSheet } from "./CleaningSheet";
 import { CleaningDetailSheet } from "./CleaningDetailSheet";
 import { CleaningStats } from "./CleaningStats";
+import { CleaningCoverage } from "./CleaningCoverage";
 
-export function CleaningPortal({db, currentUser, role, allPropNames, propColorMap, users, cleanings, startOrJoinCleaning, setItemStatus, joinCleaningWorker, removeCleaningWorker, signCleaningWorker, cancelCleaning, addCleaningComment, onSwitch}) {
+export function CleaningPortal({db, currentUser, role, allPropNames, propColorMap, users, cleanings, bookings, bookingsLoaded, startOrJoinCleaning, setItemStatus, joinCleaningWorker, removeCleaningWorker, signCleaningWorker, cancelCleaning, addCleaningComment, onSwitch}) {
   const [activeCleaning, setActiveCleaning] = useState(null);
   const [opening, setOpening] = useState(null);
   const [cleaningSel, setCleaningSel] = useState(null);
   const [pendingProp, setPendingProp] = useState(null);
+  const [dupWarning, setDupWarning] = useState(null);
   const [tab, setTab] = useState("main");
   const isCleaning = role === "cleaning";
   const userAssignedProps = currentUser?.properties || [];
@@ -31,7 +33,9 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
 
   function tapProperty(p, alreadyInProgress) {
     if (opening) return;
-    if (alreadyInProgress) startCleaning(p, null);
+    if (alreadyInProgress) { startCleaning(p, null); return; }
+    const cleanedToday = completedCleanings.some(c => c.property === p && c.completedAt && localDateISO(c.completedAt) === todayISO());
+    if (cleanedToday) setDupWarning(p);
     else setPendingProp(p);
   }
 
@@ -39,6 +43,12 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
     const p = pendingProp;
     setPendingProp(null);
     startCleaning(p, type);
+  }
+
+  function confirmDupWarning() {
+    const p = dupWarning;
+    setDupWarning(null);
+    setPendingProp(p);
   }
 
   return <div style={{height:"100%", display:"flex", flexDirection:"column", background:"#f5f5f7"}}>
@@ -53,22 +63,24 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
       {role === "admin" && <div style={{display:"flex", gap:4, marginTop:14}}>
         <button onClick={() => setTab("main")} style={{flex:1, padding:"9px 0", border:"none", borderRadius:8, background: tab === "main" ? "#E6F1FB" : "transparent", color: tab === "main" ? "#378ADD" : "#999", fontSize:13, fontWeight:600, cursor:"pointer"}}>Portal</button>
         <button onClick={() => setTab("stats")} style={{flex:1, padding:"9px 0", border:"none", borderRadius:8, background: tab === "stats" ? "#E6F1FB" : "transparent", color: tab === "stats" ? "#378ADD" : "#999", fontSize:13, fontWeight:600, cursor:"pointer"}}>📊 Estadísticas</button>
+        <button onClick={() => setTab("coverage")} style={{flex:1, padding:"9px 0", border:"none", borderRadius:8, background: tab === "coverage" ? "#E6F1FB" : "transparent", color: tab === "coverage" ? "#378ADD" : "#999", fontSize:13, fontWeight:600, cursor:"pointer"}}>✅ Cobertura</button>
       </div>}
     </div>
     <div style={{flex:1, overflowY:"auto", padding:"20px 14px", WebkitOverflowScrolling:"touch"}}>
-      {tab === "stats" ? <CleaningStats cleanings={visibleCleanings}/> : <>
+      {tab === "stats" ? <CleaningStats cleanings={visibleCleanings}/> : tab === "coverage" ? <CleaningCoverage cleanings={cleanings} allPropNames={allPropNames} bookings={bookings} bookingsLoaded={bookingsLoaded} db={db} role={role} cancelCleaning={cancelCleaning}/> : <>
       <div className="section-label">Propiedades</div>
       {propNames.length === 0 && <div style={{textAlign:"center", color:"#aaa", fontSize:13, padding:20}}>No tienes propiedades asignadas.</div>}
       {propNames.map(p => {
         const last = completedCleanings.filter(c => c.property === p).sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""))[0];
         const inProgress = visibleCleanings.find(c => c.property === p && c.status === "in_progress");
+        const cleanedToday = last && localDateISO(last.completedAt) === todayISO();
         const clr = propColorMap[p] || COLOR_FRAMES[0];
         return <div key={p} className="task-item" onClick={() => tapProperty(p, !!inProgress)} style={{opacity:opening && opening !== p ? 0.5 : 1}}>
           <div style={{display:"flex", alignItems:"center", gap:10}}>
             <div style={{width:10, height:10, borderRadius:"50%", background:clr.topBar, flexShrink:0}}/>
             <div style={{flex:1, minWidth:0}}>
               <div className="task-title">{p}</div>
-              <div className="task-prop">{last ? `Última limpieza: ${fmtDate(last.completedAt)} · ${CLEANING_TYPE_LABEL[last.cleaningType || "checkout"]}` : "Sin limpiezas registradas"}</div>
+              <div className="task-prop">{last ? `Última limpieza: ${fmtDate(last.completedAt)} · ${CLEANING_TYPE_LABEL[last.cleaningType || "checkout"]}` : "Sin limpiezas registradas"}{cleanedToday && !inProgress ? <span style={{color:"#BA7517", fontWeight:600}}> · Ya limpiada hoy</span> : ""}</div>
             </div>
             {inProgress ? <div style={{color:"#BA7517", fontSize:12, fontWeight:600}}>● En curso ({CLEANING_TYPE_LABEL[inProgress.cleaningType || "checkout"]})</div> : <div style={{color:"#378ADD", fontSize:13, fontWeight:600}}>{opening === p ? "Abriendo…" : "Limpiar ›"}</div>}
           </div>
@@ -98,6 +110,19 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
           <div style={{display:"flex", flexDirection:"column", gap:10, marginTop:6}}>
             <button className="btn-primary" onClick={() => chooseType("daily")}>Diaria (ocupación)</button>
             <button className="btn-secondary" onClick={() => chooseType("checkout")}>Salida (check-out)</button>
+          </div>
+        </div>
+      </div>
+    </div>}
+    {dupWarning && <div className="modal-overlay" onClick={() => setDupWarning(null)}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{height:"auto", borderRadius:20}}>
+        <div className="modal-handle"/>
+        <div className="modal-sheet-scroll" style={{paddingBottom:20}}>
+          <div className="modal-title">{dupWarning}</div>
+          <div className="modal-sub">⚠️ Ya se registró una limpieza en esta propiedad hoy. ¿Quieres registrar otra?</div>
+          <div style={{display:"flex", flexDirection:"column", gap:10, marginTop:6}}>
+            <button className="btn-secondary" onClick={() => setDupWarning(null)}>Cancelar</button>
+            <button className="btn-primary" onClick={confirmDupWarning}>Sí, limpiar de nuevo</button>
           </div>
         </div>
       </div>

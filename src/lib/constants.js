@@ -198,6 +198,18 @@ export const CONSTRUCTION_DOC_CATEGORIES = ["Planos","Shop Drawings","Arquitect�
 /* ===== Daily/occupancy cleaning — same rooms, one "Limpio" check per space ===== */
 export const CLEANING_TYPE_LABEL = {daily:"Diaria (ocupación)", checkout:"Salida (check-out)"};
 
+/* Zantamar units — only get a checkout cleaning, no daily cleaning is expected while occupied.
+   Every other property is expected to get a daily cleaning each night of a stay. */
+export const CHECKOUT_ONLY_PROPERTIES = ["205","305","303","304","306","TH7"];
+
+/* Named groupings for the cleaning coverage view — any property not listed here falls
+   into an "Extras" group computed at render time, not hardcoded. */
+export const PROPERTY_GROUPS = [
+  {label:"La Vida", properties:["Girasol","Turquesa","Zenzontle","Perico","Jaguar","Pelicano"]},
+  {label:"Punta Mita", properties:["Palmas","Terrazas"]},
+  {label:"Zantamar", properties:["TH7","205","305","303","304","306"]},
+];
+
 export function buildDailyChecklist(property) {
   const rooms = buildRoomChecklist(property);
   return rooms.map(room => ({...room, items:[{id:"clean", label:"Limpio"}]}));

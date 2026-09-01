@@ -7,17 +7,36 @@ import { VacationSection } from "./VacationSection";
 import { AdminEmployeesSection } from "./AdminEmployeesSection";
 import { CompWorkSection } from "./CompWorkSection";
 
-export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compRequests,db,onSwitch,onMarkSeen,allPropNames,propColorMap,updateUser,removeUser,addUser}) {
+export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compRequests,db,onSwitch,onMarkSeen,ptoLastSeen,onMarkCompSeen,compLastSeen,allPropNames,propColorMap,updateUser,removeUser,addUser}) {
   const [page,setPage] = useState(null);
-  const pendingPTO = role==="supervisor"
+  const isSupervisorRole = role==="supervisor";
+  const isAdminRole = role==="admin";
+
+  // Items needing MY approval action (irrelevant to plain staff, who can't approve anything).
+  const ptoNeedsAction = isSupervisorRole
     ? ptoRequests.filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor").length
-    : ptoRequests.filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).length;
-  const pendingComp = role==="supervisor"
+    : isAdminRole
+    ? ptoRequests.filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).length
+    : 0;
+  const compNeedsAction = isSupervisorRole
     ? [...compWork,...compRequests].filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor").length
-    : [...compWork,...compRequests].filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).length;
-  if(page==="vacation") return <VacationSection currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} onMarkSeen={onMarkSeen}/>;
+    : isAdminRole
+    ? [...compWork,...compRequests].filter(r=>["pending_supervisor","pending_admin"].includes(r.status)).length
+    : 0;
+  // My own requests that were just decided (approved/denied) since I last opened the section.
+  // Admin doesn't submit vacation/comp requests, so this never applies to admin.
+  const myPtoNotify = !isAdminRole
+    ? ptoRequests.filter(r=>r.userId===currentUser.id&&["approved","declined"].includes(r.status)&&(r.adminDecision?.at||r.supervisorDecision?.at||"")>(ptoLastSeen||"")).length
+    : 0;
+  const myCompNotify = !isAdminRole
+    ? [...compWork,...compRequests].filter(r=>r.userId===currentUser.id&&["approved","declined"].includes(r.status)&&(r.adminDecision?.at||r.supervisorDecision?.at||"")>(compLastSeen||"")).length
+    : 0;
+  const pendingPTO = ptoNeedsAction + myPtoNotify;
+  const pendingComp = compNeedsAction + myCompNotify;
+
+  if(page==="vacation") return <VacationSection currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compRequests={compRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} onMarkSeen={onMarkSeen}/>;
   if(page==="employees") return <AdminEmployeesSection users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser} onBack={()=>setPage(null)} onSwitch={onSwitch}/>;
-  if(page==="compwork") return <CompWorkSection currentUser={currentUser} role={role} users={users} compWork={compWork} compRequests={compRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} allPropNames={allPropNames}/>;
+  if(page==="compwork") return <CompWorkSection currentUser={currentUser} role={role} users={users} compWork={compWork} compRequests={compRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} allPropNames={allPropNames} onMarkSeen={onMarkCompSeen}/>;
   return <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f5f5f7"}}>
     <div style={{background:"#fff",padding:"16px 16px 14px",paddingTop:"calc(16px + env(safe-area-inset-top))",borderBottom:"0.5px solid rgba(0,0,0,0.08)",flexShrink:0}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>

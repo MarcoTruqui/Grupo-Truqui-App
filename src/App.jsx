@@ -86,11 +86,18 @@ function App() {
   const [constructionDetails, setConstructionDetails] = useState([]);
   const [constructionSubcontractors, setConstructionSubcontractors] = useState([]);
   const [ptoLastSeen, setPtoLastSeen] = useState(() => localStorage.getItem(`pto_seen_${currentUser?.id}`) || "");
+  const [compLastSeen, setCompLastSeen] = useState(() => localStorage.getItem(`comp_seen_${currentUser?.id}`) || "");
 
   function markPTOSeen() {
     const now = new Date().toISOString();
     localStorage.setItem(`pto_seen_${currentUser.id}`, now);
     setPtoLastSeen(now);
+  }
+
+  function markCompSeen() {
+    const now = new Date().toISOString();
+    localStorage.setItem(`comp_seen_${currentUser.id}`, now);
+    setCompLastSeen(now);
   }
 
   useEffect(() => {
@@ -301,8 +308,8 @@ function App() {
     if (!canConstruction && HR_ONLY_ROLES.includes(role)) { setPortal("admin"); return null; }
     return <PortalSelector user={currentUser} onSelect={setPortal} canCleaning={canLogCleaning} canConstruction={canConstruction} showMaintenance={!HR_ONLY_ROLES.includes(role)}/>;
   }
-  if (portal === "admin") return <AdminPortal currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} db={db} onSwitch={(!HR_ONLY_ROLES.includes(role) || canConstruction) ? ()=>setPortal(null) : null} onMarkSeen={markPTOSeen} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser}/>;
-  if (portal === "cleaning") return <CleaningPortal db={db} currentUser={currentUser} role={role} allPropNames={allPropNames} propColorMap={propColorMap} users={users} cleanings={cleanings} startOrJoinCleaning={startOrJoinCleaning} setItemStatus={setItemStatus} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onSwitch={()=>setPortal(null)}/>;
+  if (portal === "admin") return <AdminPortal currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} db={db} onSwitch={(!HR_ONLY_ROLES.includes(role) || canConstruction) ? ()=>setPortal(null) : null} onMarkSeen={markPTOSeen} ptoLastSeen={ptoLastSeen} onMarkCompSeen={markCompSeen} compLastSeen={compLastSeen} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser}/>;
+  if (portal === "cleaning") return <CleaningPortal db={db} currentUser={currentUser} role={role} allPropNames={allPropNames} propColorMap={propColorMap} users={users} cleanings={cleanings} bookings={bookings} bookingsLoaded={bookingsLoaded} startOrJoinCleaning={startOrJoinCleaning} setItemStatus={setItemStatus} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onSwitch={()=>setPortal(null)}/>;
   if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} addConstructionProject={addConstructionProject} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} onSwitch={()=>setPortal(null)}/>;
 
   const todayStr = todayISO();

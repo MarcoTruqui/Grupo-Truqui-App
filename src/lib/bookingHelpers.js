@@ -69,3 +69,17 @@ export function getPropBookingDetails(bookings, bookingsLoaded, propName) {
   const upcoming = mapped.filter(b => b.ciDate > today).slice(0, 2);
   return {current, upcoming};
 }
+
+/* Every parsed booking for a property, past and future, sorted by check-in — unlike
+   getPropBookingDetails (which only cares about "now"), this is for auditing whole
+   months of history, and callers need the full chronological list to find "the next
+   booking after this one" even when that pair straddles a month boundary. */
+export function getPropBookings(bookings, bookingsLoaded, propName) {
+  if (!bookingsLoaded) return [];
+  return bookings.filter(b => mapSheetProp(b.prop) === propName).map(b => {
+    const ci = parseDate(b.checkin); const co = parseDate(b.checkout);
+    if (!ci || !co) return null;
+    ci.setHours(0, 0, 0, 0); co.setHours(0, 0, 0, 0);
+    return {...b, ciDate:ci, coDate:co};
+  }).filter(Boolean).sort((a, b) => a.ciDate - b.ciDate);
+}

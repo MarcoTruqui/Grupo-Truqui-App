@@ -7,7 +7,7 @@ import { RequestCard } from "./RequestCard";
 import { PTOCalendar } from "./PTOCalendar";
 import { TeamVacationCalendar } from "./TeamVacationCalendar";
 
-export function VacationSection({currentUser,role,users,ptoRequests,db,onBack,onSwitch,onMarkSeen}) {
+export function VacationSection({currentUser,role,users,ptoRequests,compRequests,db,onBack,onSwitch,onMarkSeen}) {
   useEffect(()=>{ if(onMarkSeen) onMarkSeen(); },[]);
   const [selDays,setSelDays] = useState([]);
   const [reason,setReason] = useState("");
@@ -149,7 +149,7 @@ export function VacationSection({currentUser,role,users,ptoRequests,db,onBack,on
           {allPTO.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:30}}>Sin solicitudes aún</div>}
           {allPTO.map(r=><RequestCard key={r.id} r={r} {...cardProps}/>)}
         </>}
-        {staffTab==="calendar"&&<TeamVacationCalendar users={users} ptoRequests={ptoRequests}/>}
+        {staffTab==="calendar"&&<TeamVacationCalendar users={users} ptoRequests={ptoRequests} compRequests={compRequests}/>}
         {staffTab!=="calendar"&&<>
           <div className="section-label" style={{marginTop:8}}>Totales de todo el personal</div>
           {users.filter(u=>u.role!=="admin").map(u=>{

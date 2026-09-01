@@ -3,7 +3,7 @@
    rolls over to "tomorrow" hours before local midnight — "today" would start ticking
    over around 6pm local instead of 12am. These use the Date object's local getters
    (getFullYear/getMonth/getDate) so the date string always matches the wall clock. */
-function localISO(d) {
+export function localISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 export function todayISO() { return localISO(new Date()); }

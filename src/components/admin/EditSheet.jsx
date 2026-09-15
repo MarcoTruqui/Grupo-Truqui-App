@@ -1,11 +1,8 @@
 import { ROLE_META, COLOR_FRAMES } from "../../lib/constants";
 import { getVacationDaysBySeniority, getCurrentAnniversaryYear } from "../../lib/firestoreHelpers";
 
-const EMPLOYEE_ROLE_COLORS = {admin:"#534AB7",supervisor:"#1D9E75",maintenance:"#BA7517",cleaning:"#378ADD",office:"#D14D8A",construction:"#E87A30",purchasing:"#0D9DA7"};
-
 export function EditSheet({editing,setEditing,allPropNames,propColorMap,updateUser}) {
   if(!editing) return null;
-  const rc = EMPLOYEE_ROLE_COLORS;
   return <div className="modal-overlay" onClick={()=>setEditing(null)}>
     <div className="modal-sheet" onClick={e=>e.stopPropagation()}>
       <div className="modal-handle"/>
@@ -16,9 +13,9 @@ export function EditSheet({editing,setEditing,allPropNames,propColorMap,updateUs
         <div className="field">
           <label>Rol</label>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {["admin","supervisor","maintenance","cleaning","office","construction","purchasing"].map(r=>{
+            {Object.keys(ROLE_META).map(r=>{
               const active=editing.role===r;
-              return <button key={r} onClick={()=>setEditing(u=>({...u,role:r}))} style={{padding:"9px 14px",borderRadius:10,border:active?`2px solid ${rc[r]}`:"1.5px solid #e0e0e0",background:active?rc[r]:"#fafafa",color:active?"#fff":"#666",fontSize:13,cursor:"pointer",fontWeight:active?700:400}}>{ROLE_META[r].label}</button>;
+              return <button key={r} onClick={()=>setEditing(u=>({...u,role:r}))} style={{padding:"9px 14px",borderRadius:10,border:active?`2px solid ${ROLE_META[r].bg}`:"1.5px solid #e0e0e0",background:active?ROLE_META[r].bg:"#fafafa",color:active?"#fff":"#666",fontSize:13,cursor:"pointer",fontWeight:active?700:400}}>{ROLE_META[r].label}</button>;
             })}
           </div>
         </div>

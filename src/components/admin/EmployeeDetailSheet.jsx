@@ -4,11 +4,13 @@ import { Av } from "../shared/Avatar";
 import { RBadge } from "../shared/Badges";
 import { PTOStatusBadge } from "./PTOStatusBadge";
 
-export function EmployeeDetailSheet({viewingId,setViewingId,setEditing,users,ptoRequests,compWork,compRequests}) {
+export function EmployeeDetailSheet({role,viewingId,setViewingId,setEditing,users,ptoRequests,compWork,compRequests}) {
+  const canEdit = role==="admin";
+  const showComp = role!=="contador";
   const u=users.find(x=>x.id===viewingId);
   if(!u) return null;
   const bal=u.role!=="admin"?getPTOBalance(u.id,users,ptoRequests):null;
-  const comp=u.role!=="admin"?getCompBalance(u.id,compWork,compRequests,users):null;
+  const comp=(showComp&&u.role!=="admin")?getCompBalance(u.id,compWork,compRequests,users):null;
   const hireDate=u.hireDate||"2020-01-01";
   const yearsIn=getCurrentAnniversaryYear(hireDate);
   const hireFmt=new Date(hireDate+"T12:00:00").toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"});
@@ -91,10 +93,10 @@ export function EmployeeDetailSheet({viewingId,setViewingId,setEditing,users,pto
         </>}
       </div>
       <div className="modal-sheet-bottom">
-        <div className="btn-row">
+        {canEdit ? <div className="btn-row">
           <button className="btn-secondary" onClick={()=>setViewingId(null)}>Cerrar</button>
           <button className="btn-primary" onClick={()=>{setEditing({...u});setViewingId(null);}}>Editar empleado</button>
-        </div>
+        </div> : <button className="btn-secondary" style={{width:"100%"}} onClick={()=>setViewingId(null)}>Cerrar</button>}
       </div>
     </div>
   </div>;

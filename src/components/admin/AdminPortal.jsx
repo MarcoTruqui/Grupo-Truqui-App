@@ -35,7 +35,7 @@ export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compReq
   const pendingComp = compNeedsAction + myCompNotify;
 
   if(page==="vacation") return <VacationSection currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compRequests={compRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} onMarkSeen={onMarkSeen}/>;
-  if(page==="employees") return <AdminEmployeesSection users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser} onBack={()=>setPage(null)} onSwitch={onSwitch}/>;
+  if(page==="employees") return <AdminEmployeesSection role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser} onBack={()=>setPage(null)} onSwitch={onSwitch}/>;
   if(page==="compwork") return <CompWorkSection currentUser={currentUser} role={role} users={users} compWork={compWork} compRequests={compRequests} db={db} onBack={()=>setPage(null)} onSwitch={onSwitch} allPropNames={allPropNames} onMarkSeen={onMarkCompSeen}/>;
   return <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f5f5f7"}}>
     <div style={{background:"#fff",padding:"16px 16px 14px",paddingTop:"calc(16px + env(safe-area-inset-top))",borderBottom:"0.5px solid rgba(0,0,0,0.08)",flexShrink:0}}>
@@ -60,7 +60,7 @@ export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compReq
           <span style={{color:"#1D9E75",fontSize:22,fontWeight:300}}>›</span>
         </div>
       </div>
-      {role!=="construction"&&<div onClick={()=>setPage("compwork")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
+      {["admin","maintenance","cleaning"].includes(role)&&<div onClick={()=>setPage("compwork")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
         <div style={{width:52,height:52,borderRadius:14,background:"#FAEEDA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>🗓️</div>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#1a1a1a"}}>Días Extra / Festivos</div>
@@ -71,7 +71,7 @@ export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compReq
           <span style={{color:"#1D9E75",fontSize:22,fontWeight:300}}>›</span>
         </div>
       </div>}
-      {role==="admin"&&<div onClick={()=>setPage("employees")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
+      {["admin","contador"].includes(role)&&<div onClick={()=>setPage("employees")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
         <div style={{width:52,height:52,borderRadius:14,background:"#EEEDFE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>👥</div>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#1a1a1a"}}>Empleados</div>

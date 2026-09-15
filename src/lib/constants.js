@@ -8,11 +8,12 @@ export const ROLE_META = {
   cleaning:     {label:"Limpieza",       bg:"#378ADD", color:"#fff"},
   office:       {label:"Oficina",        bg:"#D14D8A", color:"#fff"},
   construction: {label:"Construcción",   bg:"#E87A30", color:"#fff"},
-  purchasing:   {label:"Compras",        bg:"#0D9DA7", color:"#fff"}
+  purchasing:   {label:"Compras",        bg:"#0D9DA7", color:"#fff"},
+  contador:     {label:"Contador",       bg:"#7C3AED", color:"#fff"}
 };
 
 export const MAINTENANCE_ROLES = ["maintenance","cleaning","supervisor"];
-export const HR_ONLY_ROLES     = ["office","construction","purchasing"];
+export const HR_ONLY_ROLES     = ["office","construction","purchasing","contador"];
 
 export const STATUS_LABEL = {
   "Open":"Abierta",

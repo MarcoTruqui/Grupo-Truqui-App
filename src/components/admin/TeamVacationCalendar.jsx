@@ -40,11 +40,13 @@ function buildWeekSegments(weekKeyRow, dayMap) {
    construction/purchasing) so a comp-day bar never happens to render in the exact same
    color as some role's vacation bar — e.g. maintenance's role color is #BA7517, which
    would have been indistinguishable from a fixed amber comp-day color. */
-const COMP_REQ_COLOR = "#C2185B";
+export const COMP_REQ_COLOR = "#C2185B";
 const COMP_WORK_COLOR = "#1E3A8A";
 
-export function TeamVacationCalendar({users, ptoRequests=[], compRequests=[], compWork=[]}) {
-  const [vm, setVm] = useState(() => { const d = new Date(); return {y:d.getFullYear(), m:d.getMonth()}; });
+/* Month is controlled by the parent (not owned here) so a parent that also shows something
+   else tied to "the currently viewed month" — like a payroll summary — can stay in sync
+   with whatever month the calendar is scrolled to, instead of tracking it twice. */
+export function TeamVacationCalendar({users, ptoRequests=[], compRequests=[], compWork=[], vm, setVm}) {
   const [selectedBlock, setSelectedBlock] = useState(null);
   const {y, m} = vm;
   const firstDow = new Date(y,m,1).getDay();

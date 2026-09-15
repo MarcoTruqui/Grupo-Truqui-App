@@ -2,9 +2,6 @@ import { useState } from "react";
 import { ROLE_META, COLOR_FRAMES } from "../../lib/constants";
 import { todayISO } from "../../lib/dateHelpers";
 
-const EMPLOYEE_ROLE_COLORS = {admin:"#534AB7", supervisor:"#1D9E75", maintenance:"#BA7517", cleaning:"#378ADD", office:"#D14D8A", construction:"#E87A30", purchasing:"#0D9DA7"};
-const ROLE_ORDER = ["admin", "supervisor", "maintenance", "cleaning", "office", "construction", "purchasing"];
-
 export function AddEmployeeSheet({allPropNames, propColorMap, addUser, onClose}) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -49,9 +46,9 @@ export function AddEmployeeSheet({allPropNames, propColorMap, addUser, onClose})
         <div className="field">
           <label>Rol</label>
           <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
-            {ROLE_ORDER.map(r => {
+            {Object.keys(ROLE_META).map(r => {
               const active = role === r;
-              return <button key={r} onClick={() => setRole(r)} style={{padding:"9px 14px", borderRadius:10, border:active ? `2px solid ${EMPLOYEE_ROLE_COLORS[r]}` : "1.5px solid #e0e0e0", background:active ? EMPLOYEE_ROLE_COLORS[r] : "#fafafa", color:active ? "#fff" : "#666", fontSize:13, cursor:"pointer", fontWeight:active ? 700 : 400}}>{ROLE_META[r].label}</button>;
+              return <button key={r} onClick={() => setRole(r)} style={{padding:"9px 14px", borderRadius:10, border:active ? `2px solid ${ROLE_META[r].bg}` : "1.5px solid #e0e0e0", background:active ? ROLE_META[r].bg : "#fafafa", color:active ? "#fff" : "#666", fontSize:13, cursor:"pointer", fontWeight:active ? 700 : 400}}>{ROLE_META[r].label}</button>;
             })}
           </div>
         </div>

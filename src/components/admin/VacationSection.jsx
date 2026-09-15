@@ -5,7 +5,61 @@ import { Av } from "../shared/Avatar";
 import { RBadge } from "../shared/Badges";
 import { RequestCard } from "./RequestCard";
 import { PTOCalendar } from "./PTOCalendar";
-import { TeamVacationCalendar } from "./TeamVacationCalendar";
+import { TeamVacationCalendar, COMP_REQ_COLOR } from "./TeamVacationCalendar";
+
+/* Approved days only (payroll pays for confirmed time off, not pending requests). PTO
+   excludes Sundays from the count like everywhere else it's tallied; comp days off don't
+   get that treatment anywhere else in the app (getCompBalance counts them raw), so this
+   matches that convention rather than inventing a new one. */
+function approvedPTODaysInRange(ptoRequests,userId,from,to){
+  const days=ptoRequests.filter(r=>r.userId===userId&&r.status==="approved").flatMap(r=>r.selectedDays||[]).filter(d=>d>=from&&d<=to);
+  return countPTODays(days);
+}
+function approvedCompDaysInRange(compRequests,userId,from,to){
+  return compRequests.filter(r=>r.userId===userId&&r.status==="approved").flatMap(r=>r.selectedDays||[]).filter(d=>d>=from&&d<=to).length;
+}
+
+/* Splits whatever month the calendar above it is showing into the two pay periods (1-15,
+   16-end) and lists who actually took time off in each — so payroll doesn't have to comb
+   the calendar by hand. A row with any comp days is painted in the same color the calendar
+   uses for comp-day bars (COMP_REQ_COLOR), so it's just as easy to spot here as it is there. */
+function PayrollSummary({vm,users,ptoRequests,compRequests,includeComp}){
+  const {y,m}=vm;
+  const pad=n=>String(n).padStart(2,"0");
+  const dim=new Date(y,m+1,0).getDate();
+  const prefix=`${y}-${pad(m+1)}-`;
+  const periods=[
+    {label:"Días 1–15",from:prefix+"01",to:prefix+"15"},
+    {label:`Días 16–${dim}`,from:prefix+"16",to:prefix+pad(dim)}
+  ];
+  return <>
+    {periods.map(p=>{
+      const rows=users.map(u=>{
+        const vac=approvedPTODaysInRange(ptoRequests,u.id,p.from,p.to);
+        const comp=includeComp?approvedCompDaysInRange(compRequests||[],u.id,p.from,p.to):0;
+        return {name:u.name,vac,comp,total:vac+comp};
+      }).filter(r=>r.total>0).sort((a,b)=>b.total-a.total);
+      return <div key={p.label} style={{background:"#fff",borderRadius:14,padding:16,marginTop:14,border:"0.5px solid rgba(0,0,0,0.07)"}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>{p.label} — para nómina</div>
+        {rows.length===0&&<div style={{fontSize:12,color:"#aaa",textAlign:"center",padding:10}}>Nadie tomó días en este periodo</div>}
+        {rows.map(r=>{
+          const hasComp=r.comp>0;
+          return <div key={r.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",marginTop:6,borderRadius:8,
+            background:hasComp?"rgba(194,24,91,0.10)":"transparent",
+            border:hasComp?`1px solid ${COMP_REQ_COLOR}`:"none",
+            borderBottom:hasComp?`1px solid ${COMP_REQ_COLOR}`:"1px dashed #f0f0f0",
+            fontSize:13}}>
+            <span style={{fontWeight:hasComp?700:400,color:hasComp?COMP_REQ_COLOR:"#333"}}>{r.name}</span>
+            <span style={{display:"flex",gap:6,alignItems:"center"}}>
+              {r.vac>0&&<span style={{fontWeight:700,color:hasComp?COMP_REQ_COLOR:"#534AB7"}}>{r.vac} vac.</span>}
+              {r.comp>0&&<span style={{fontWeight:700,color:COMP_REQ_COLOR}}>{r.comp} comp</span>}
+            </span>
+          </div>;
+        })}
+      </div>;
+    })}
+  </>;
+}
 
 export function VacationSection({currentUser,role,users,ptoRequests,compRequests,db,onBack,onSwitch,onMarkSeen}) {
   useEffect(()=>{ if(onMarkSeen) onMarkSeen(); },[]);
@@ -19,9 +73,13 @@ export function VacationSection({currentUser,role,users,ptoRequests,compRequests
   const [adminRevComment,setAdminRevComment] = useState("");
   const [staffTab,setStaffTab] = useState("pending");
   const [cancelId,setCancelId] = useState(null);
+  const [contadorTab,setContadorTab] = useState("mine");
+  const [adminCalVm,setAdminCalVm] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
+  const [contadorCalVm,setContadorCalVm] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
 
   const isAdminRole=role==="admin";
   const isSupervisorRole=role==="supervisor";
+  const isContadorRole=role==="contador";
   const myBal=!isAdminRole?getPTOBalance(currentUser.id,users,ptoRequests):null;
   const myUsed=ptoRequests.filter(r=>r.userId===currentUser.id&&r.status==="approved").flatMap(r=>r.selectedDays||[]);
   const myPending=ptoRequests.filter(r=>r.userId===currentUser.id&&["pending_supervisor","pending_admin"].includes(r.status)).flatMap(r=>r.selectedDays||[]);
@@ -64,7 +122,12 @@ export function VacationSection({currentUser,role,users,ptoRequests,compRequests
     </div>
     <div style={{flex:1,overflowY:"auto",padding:"16px 14px 32px",WebkitOverflowScrolling:"touch"}}>
 
-      {!isAdminRole&&myBal&&<>
+      {isContadorRole&&<div className="tab-bar" style={{marginBottom:14}}>
+        <button className={`tab-btn${contadorTab==="mine"?" active":""}`} onClick={()=>setContadorTab("mine")}>Mis vacaciones</button>
+        <button className={`tab-btn${contadorTab==="calendar"?" active":""}`} onClick={()=>setContadorTab("calendar")}>Calendario general</button>
+      </div>}
+
+      {!isAdminRole&&myBal&&(!isContadorRole||contadorTab==="mine")&&<>
         <div style={{background:"#fff",borderRadius:14,padding:16,marginBottom:14,border:"0.5px solid rgba(0,0,0,0.07)"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>Mi balance — {new Date().getFullYear()}</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,textAlign:"center"}}>
@@ -102,6 +165,13 @@ export function VacationSection({currentUser,role,users,ptoRequests,compRequests
           <div className="section-label">Mis solicitudes</div>
           {myRequests.map(r=><RequestCard key={r.id} r={r} {...cardProps}/>)}
         </>}
+      </>}
+
+      {isContadorRole&&contadorTab==="calendar"&&<>
+        <div style={{background:"#fff",borderRadius:14,padding:16,border:"0.5px solid rgba(0,0,0,0.07)"}}>
+          <TeamVacationCalendar users={users} ptoRequests={ptoRequests} vm={contadorCalVm} setVm={setContadorCalVm}/>
+        </div>
+        <PayrollSummary vm={contadorCalVm} users={users} ptoRequests={ptoRequests} includeComp={false}/>
       </>}
 
       {isSupervisorRole&&<>
@@ -149,7 +219,10 @@ export function VacationSection({currentUser,role,users,ptoRequests,compRequests
           {allPTO.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:30}}>Sin solicitudes aún</div>}
           {allPTO.map(r=><RequestCard key={r.id} r={r} {...cardProps}/>)}
         </>}
-        {staffTab==="calendar"&&<TeamVacationCalendar users={users} ptoRequests={ptoRequests} compRequests={compRequests}/>}
+        {staffTab==="calendar"&&<>
+          <TeamVacationCalendar users={users} ptoRequests={ptoRequests} compRequests={compRequests} vm={adminCalVm} setVm={setAdminCalVm}/>
+          <PayrollSummary vm={adminCalVm} users={users} ptoRequests={ptoRequests} compRequests={compRequests} includeComp={true}/>
+        </>}
         {staffTab!=="calendar"&&<>
           <div className="section-label" style={{marginTop:8}}>Totales de todo el personal</div>
           {users.filter(u=>u.role!=="admin").map(u=>{

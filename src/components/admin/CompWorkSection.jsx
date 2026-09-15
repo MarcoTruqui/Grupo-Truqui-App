@@ -11,6 +11,7 @@ export function CompWorkSection({currentUser,role,users,compWork,compRequests,db
   useEffect(()=>{ if(onMarkSeen) onMarkSeen(); },[]);
   const isAdmin=role==="admin";
   const [tab,setTab] = useState(isAdmin?"pending":"register");
+  const [calVm,setCalVm] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
   const [workDate,setWorkDate] = useState("");
   const [workType,setWorkType] = useState("sunday");
   const [workReason,setWorkReason] = useState("");
@@ -226,7 +227,7 @@ export function CompWorkSection({currentUser,role,users,compWork,compRequests,db
         {adminReqAll.length===0&&<div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:20,background:"#fff",borderRadius:12,marginBottom:12}}>Sin solicitudes aún</div>}
         {adminReqAll.map(r=><ReqCard key={r.id} r={r} {...cardProps}/>)}
       </>}
-      {isAdmin&&tab==="calendar"&&<TeamVacationCalendar users={users} compRequests={compRequests} compWork={compWork}/>}
+      {isAdmin&&tab==="calendar"&&<TeamVacationCalendar users={users} compRequests={compRequests} compWork={compWork} vm={calVm} setVm={setCalVm}/>}
       {isAdmin&&tab!=="calendar"&&<>
         <div className="section-label" style={{marginTop:8}}>Balances del personal</div>
         {users.filter(u=>["maintenance","cleaning"].includes(u.role)).map(u=>{

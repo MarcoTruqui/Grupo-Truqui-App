@@ -168,3 +168,69 @@ export async function removeSubPayment(db, subId, currentPayments, idx) {
   const updated = currentPayments.filter((_, i) => i !== idx);
   try { await db.collection("constructionSubcontractors").doc(subId).update({payments:updated}); } catch (e) { alert("Error: " + e.message); }
 }
+
+/* ===== Machinery — the machine roster is ONE global library shared by every project
+   (a backhoe bought for one site can still get logged on another), while usage logs are
+   per-project. A machine can be started/stopped any number of times a day, and can even
+   have open logs in more than one project at once — nothing here tries to prevent that. */
+async function uploadMachinePhotos(storage, projectId, photos) {
+  return Promise.all((photos || []).map(async photo => {
+    const blob = await compressImg(photo.url, 1400, 0.7);
+    const ref = storage.ref(`construction/${projectId}/machinery/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`);
+    await ref.put(blob, {contentType:"image/jpeg"});
+    return ref.getDownloadURL();
+  }));
+}
+
+export async function addConstructionMachine(currentUser, db, name) {
+  try {
+    const ref = await db.collection("constructionMachines").add({name:name.trim(), createdBy:currentUser.name, createdAt:new Date().toISOString()});
+    return ref.id;
+  } catch (e) { alert("Error: " + e.message); return null; }
+}
+
+export async function startMachineUse(currentUser, storage, db, projectId, machineId, machineName, startHorometro, photos) {
+  try {
+    const urls = await uploadMachinePhotos(storage, projectId, photos);
+    await db.collection("constructionMachineLogs").add({
+      projectId, machineId, machineName,
+      startHorometro:Number(startHorometro), startPhotoUrls:urls, startAt:new Date().toISOString(), startedBy:currentUser.name,
+      endHorometro:null, endPhotoUrls:null, endAt:null, endedBy:null,
+      status:"in_progress", totalHours:null,
+      createdAt:new Date().toISOString()
+    });
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function stopMachineUse(currentUser, storage, db, projectId, logId, startHorometro, endHorometro, photos) {
+  try {
+    const urls = await uploadMachinePhotos(storage, projectId, photos);
+    await db.collection("constructionMachineLogs").doc(logId).update({
+      endHorometro:Number(endHorometro), endPhotoUrls:urls, endAt:new Date().toISOString(), endedBy:currentUser.name,
+      status:"completed", totalHours:Number(endHorometro) - Number(startHorometro)
+    });
+  } catch (e) { alert("Error: " + e.message); }
+}
+
+export async function removeMachineLog(db, id) {
+  try { await db.collection("constructionMachineLogs").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
+}
+
+/* Removing a machine from the shared library doesn't touch its past usage logs — those
+   keep their own denormalized machineName, so history stays intact even after the
+   machine itself is deleted (or renamed, if that's ever added). */
+export async function removeConstructionMachine(db, id) {
+  try { await db.collection("constructionMachines").doc(id).delete(); } catch (e) { alert("Error: " + e.message); }
+}
+
+/* An hour meter only ever climbs, and it can't climb faster than real time passes — so
+   either symptom (reading went down, or claims more hours of use than time elapsed since
+   the machine was started, with half an hour of slack for rounding) means a misread digit
+   or wrong machine, not a real reading. Used both as a same-screen warning when someone
+   closes a log out, and to keep flagging it afterward if they saved it anyway. */
+export function isAnomalousMachineLog(log) {
+  if (log.status !== "completed") return false;
+  if (log.endHorometro < log.startHorometro) return true;
+  const elapsedHours = (new Date(log.endAt) - new Date(log.startAt)) / 3600000;
+  return (log.endHorometro - log.startHorometro) > elapsedHours + 0.5;
+}

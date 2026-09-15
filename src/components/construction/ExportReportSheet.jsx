@@ -8,12 +8,13 @@ const QUICK_RANGES = [
   ["month", "Este mes", () => [startOfMonthISO(), todayISO()]]
 ];
 
-export function ExportReportSheet({projectName, logs, photos, headcount, subcontractors, photoCategories, onClose}) {
+export function ExportReportSheet({projectName, logs, photos, headcount, machineLogs, subcontractors, photoCategories, onClose}) {
   const [dateFrom, setDateFrom] = useState(daysAgoISO(30));
   const [dateTo, setDateTo] = useState(todayISO());
   const [includeLogs, setIncludeLogs] = useState(true);
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeHeadcount, setIncludeHeadcount] = useState(true);
+  const [includeMachinery, setIncludeMachinery] = useState(true);
   const [selectedPhotoCategories, setSelectedPhotoCategories] = useState([...photoCategories]);
   const [mode, setMode] = useState("combined");
 
@@ -23,6 +24,10 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
 
   const filteredLogs = logs.filter(l => l.date >= dateFrom && l.date <= dateTo);
   const filteredHeadcount = headcount.filter(h => h.date >= dateFrom && h.date <= dateTo);
+  const filteredMachineLogs = machineLogs.filter(l => {
+    const d = localDateISO(l.startAt);
+    return d >= dateFrom && d <= dateTo;
+  });
   const filteredPhotos = photos.filter(p => {
     const d = localDateISO(p.uploadedAt);
     return d >= dateFrom && d <= dateTo && selectedPhotoCategories.includes(p.category);
@@ -31,6 +36,7 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
   const selectedSections = [];
   if (includeHeadcount) selectedSections.push({key:"headcount", label:"Personal", data:filteredHeadcount});
   if (includeLogs) selectedSections.push({key:"logs", label:"Bitácora", data:filteredLogs});
+  if (includeMachinery) selectedSections.push({key:"machinery", label:"Maquinaria", data:filteredMachineLogs});
   if (includePhotos) selectedSections.push({key:"photos", label:"Fotos", data:filteredPhotos});
 
   function generateCombined() { exportConstructionReport(projectName, dateFrom, dateTo, selectedSections, subcontractors); }
@@ -65,6 +71,7 @@ export function ExportReportSheet({projectName, logs, photos, headcount, subcont
             {[
               ["headcount", "Personal", filteredHeadcount.length, includeHeadcount, setIncludeHeadcount],
               ["logs", "Bitácora", filteredLogs.length, includeLogs, setIncludeLogs],
+              ["machinery", "Maquinaria", filteredMachineLogs.length, includeMachinery, setIncludeMachinery],
               ["photos", "Fotos", filteredPhotos.length, includePhotos, setIncludePhotos]
             ].map(([key, label, count, checked, setChecked]) => (
               <div key={key} onClick={() => setChecked(v => !v)} style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer", padding:"10px 12px", borderRadius:10, background:checked ? "#EAF3DE" : "#fafafa", border:checked ? "1.5px solid #1D9E75" : "1.5px solid #e0e0e0"}}>

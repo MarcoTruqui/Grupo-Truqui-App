@@ -60,7 +60,7 @@ export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compReq
           <span style={{color:"#1D9E75",fontSize:22,fontWeight:300}}>›</span>
         </div>
       </div>
-      <div onClick={()=>setPage("compwork")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
+      {role!=="construction"&&<div onClick={()=>setPage("compwork")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
         <div style={{width:52,height:52,borderRadius:14,background:"#FAEEDA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>🗓️</div>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#1a1a1a"}}>Días Extra / Festivos</div>
@@ -70,7 +70,7 @@ export function AdminPortal({currentUser,role,users,ptoRequests,compWork,compReq
           {pendingComp>0&&<span style={{background:"#BA7517",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20}}>{pendingComp}</span>}
           <span style={{color:"#1D9E75",fontSize:22,fontWeight:300}}>›</span>
         </div>
-      </div>
+      </div>}
       {role==="admin"&&<div onClick={()=>setPage("employees")} style={{background:"#fff",borderRadius:16,padding:20,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}>
         <div style={{width:52,height:52,borderRadius:14,background:"#EEEDFE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>👥</div>
         <div>

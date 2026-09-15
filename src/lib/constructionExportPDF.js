@@ -81,6 +81,39 @@ function buildHeadcountSection(entries) {
   </div>`;
 }
 
+/* Same not-plausible check used in the app itself (constructionHelpers.isAnomalousMachineLog),
+   duplicated here rather than imported since this file has no other app-lib dependency and
+   the report should keep rendering even if that module ever changes shape. */
+function isAnomalousLog(l) {
+  if (l.status !== "completed") return false;
+  if (l.endHorometro < l.startHorometro) return true;
+  const elapsedHours = (new Date(l.endAt) - new Date(l.startAt)) / 3600000;
+  return (l.endHorometro - l.startHorometro) > elapsedHours + 0.5;
+}
+
+function buildMachineryLogsSection(logs) {
+  const sorted = [...logs].sort((a, b) => (a.startAt || "").localeCompare(b.startAt || ""));
+  const totalHours = sorted.reduce((s, l) => s + (l.status === "completed" ? (Number(l.totalHours) || 0) : 0), 0);
+  const rows = sorted.map(l => `
+    <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:14px;font-weight:700">${l.machineName}</div>
+        <div style="font-size:11px;color:#888">${fmtDate(l.startAt)}</div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:12px;color:#555">
+        <span>Inicio: <strong>${l.startHorometro}</strong></span>
+        <span>Fin: <strong>${l.status === "completed" ? l.endHorometro : "En curso"}</strong></span>
+        <span style="color:#E87A30;font-weight:700">${l.status === "completed" ? l.totalHours + " hrs" : "—"}</span>
+      </div>
+      ${isAnomalousLog(l) ? `<div style="font-size:11px;color:#A32D2D;background:#FCEBEB;padding:5px 9px;border-radius:8px;margin-top:6px">⚠️ Revisar — la lectura no coincide con el tiempo transcurrido</div>` : ""}
+    </div>`).join("");
+  return `<div style="margin-bottom:32px">
+    ${sectionSubtitle("🏗️", "Horómetro Maquinaria")}
+    ${sorted.length ? `<div style="text-align:right;font-size:16px;font-weight:800;color:#E87A30;margin-bottom:14px">Total del periodo: ${totalHours} hrs</div>${rows}`
+    : '<div style="text-align:center;color:#aaa;padding:30px">Sin uso de maquinaria en este rango de fechas.</div>'}
+  </div>`;
+}
+
 function buildPhotosSection(photos) {
   const sorted = [...photos].sort((a, b) => (a.uploadedAt || "").localeCompare(b.uploadedAt || ""));
   const cards = sorted.map(p => `
@@ -96,8 +129,8 @@ function buildPhotosSection(photos) {
   </div>`;
 }
 
-const SECTION_BUILDERS = {logs:buildLogsSection, headcount:buildHeadcountSection, photos:buildPhotosSection};
-const SECTION_LABELS = {logs:"Bitácora", headcount:"Personal", photos:"Fotos"};
+const SECTION_BUILDERS = {logs:buildLogsSection, headcount:buildHeadcountSection, machinery:buildMachineryLogsSection, photos:buildPhotosSection};
+const SECTION_LABELS = {logs:"Bitácora", headcount:"Personal", machinery:"Maquinaria", photos:"Fotos"};
 
 /* sections: [{key:"logs"|"photos"|"headcount", data:[...]}], in the order they should appear.
    Sections flow one after another (no forced page break) under a single shared header, each

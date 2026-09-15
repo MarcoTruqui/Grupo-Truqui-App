@@ -21,7 +21,9 @@ import {
   uploadConstructionDocument as uploadConstructionDocumentFn, removeConstructionDocument as removeConstructionDocumentFn,
   addDetailPin as addDetailPinFn, addDetailVersion as addDetailVersionFn, removeDetailPin as removeDetailPinFn, updateDetailLabel as updateDetailLabelFn,
   addSubcontractor as addSubcontractorFn, updateSubcontractor as updateSubcontractorFn, removeSubcontractor as removeSubcontractorFn,
-  addSubPayment as addSubPaymentFn, removeSubPayment as removeSubPaymentFn
+  addSubPayment as addSubPaymentFn, removeSubPayment as removeSubPaymentFn,
+  addConstructionMachine as addConstructionMachineFn, startMachineUse as startMachineUseFn, stopMachineUse as stopMachineUseFn, removeMachineLog as removeMachineLogFn,
+  removeConstructionMachine as removeConstructionMachineFn
 } from "./lib/constructionHelpers";
 
 import { LoginScreen } from "./components/LoginScreen";
@@ -85,6 +87,8 @@ function App() {
   const [constructionDocuments, setConstructionDocuments] = useState([]);
   const [constructionDetails, setConstructionDetails] = useState([]);
   const [constructionSubcontractors, setConstructionSubcontractors] = useState([]);
+  const [constructionMachines, setConstructionMachines] = useState([]);
+  const [constructionMachineLogs, setConstructionMachineLogs] = useState([]);
   const [ptoLastSeen, setPtoLastSeen] = useState(() => localStorage.getItem(`pto_seen_${currentUser?.id}`) || "");
   const [compLastSeen, setCompLastSeen] = useState(() => localStorage.getItem(`comp_seen_${currentUser?.id}`) || "");
 
@@ -146,7 +150,9 @@ function App() {
     const u12 = db.collection("constructionDocuments").onSnapshot(s => setConstructionDocuments(s.docs.map(d => ({id:d.id, ...d.data()}))));
     const u13 = db.collection("constructionSubcontractors").onSnapshot(s => setConstructionSubcontractors(s.docs.map(d => ({id:d.id, ...d.data()}))));
     const u14 = db.collection("constructionDetails").onSnapshot(s => setConstructionDetails(s.docs.map(d => ({id:d.id, ...d.data()}))));
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); u11(); u12(); u13(); u14(); };
+    const u15 = db.collection("constructionMachines").onSnapshot(s => setConstructionMachines(s.docs.map(d => ({id:d.id, ...d.data()}))));
+    const u16 = db.collection("constructionMachineLogs").onSnapshot(s => setConstructionMachineLogs(s.docs.map(d => ({id:d.id, ...d.data()}))));
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); };
   }, [authUser]);
 
   const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWaU6yrlhxjuejbroYlkzTYUKOTbhxzE1URtlJgKwB_t65aemd_M6neZ7euOxJ09lzoNcZ5Dt2g4Yq/pub?gid=311856994\x26single=true\x26output=csv";
@@ -291,6 +297,11 @@ function App() {
   async function removeSubcontractor(id) { await removeSubcontractorFn(db, id); }
   async function addSubPayment(subId, currentPayments, amount, date, note) { await addSubPaymentFn(currentUser, db, subId, currentPayments, amount, date, note); }
   async function removeSubPayment(subId, currentPayments, idx) { await removeSubPaymentFn(db, subId, currentPayments, idx); }
+  async function addConstructionMachine(name) { return await addConstructionMachineFn(currentUser, db, name); }
+  async function startMachineUse(projectId, machineId, machineName, startHorometro, photos) { await startMachineUseFn(currentUser, storage, db, projectId, machineId, machineName, startHorometro, photos); }
+  async function stopMachineUse(projectId, logId, startHorometro, endHorometro, photos) { await stopMachineUseFn(currentUser, storage, db, projectId, logId, startHorometro, endHorometro, photos); }
+  async function removeMachineLog(id) { await removeMachineLogFn(db, id); }
+  async function removeConstructionMachine(id) { await removeConstructionMachineFn(db, id); }
 
   function getOccupancy(propName) { return getOccupancyFn(bookings, bookingsLoaded, propName); }
   function getPropBookingDetails(propName) { return getPropBookingDetailsFn(bookings, bookingsLoaded, propName); }
@@ -310,7 +321,7 @@ function App() {
   }
   if (portal === "admin") return <AdminPortal currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} db={db} onSwitch={(!HR_ONLY_ROLES.includes(role) || canConstruction) ? ()=>setPortal(null) : null} onMarkSeen={markPTOSeen} ptoLastSeen={ptoLastSeen} onMarkCompSeen={markCompSeen} compLastSeen={compLastSeen} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser}/>;
   if (portal === "cleaning") return <CleaningPortal db={db} currentUser={currentUser} role={role} allPropNames={allPropNames} propColorMap={propColorMap} users={users} cleanings={cleanings} bookings={bookings} bookingsLoaded={bookingsLoaded} startOrJoinCleaning={startOrJoinCleaning} setItemStatus={setItemStatus} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onSwitch={()=>setPortal(null)}/>;
-  if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} addConstructionProject={addConstructionProject} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} onSwitch={()=>setPortal(null)}/>;
+  if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} machines={constructionMachines} machineLogs={constructionMachineLogs} addConstructionProject={addConstructionProject} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} addConstructionMachine={addConstructionMachine} startMachineUse={startMachineUse} stopMachineUse={stopMachineUse} removeMachineLog={removeMachineLog} removeConstructionMachine={removeConstructionMachine} onSwitch={()=>setPortal(null)}/>;
 
   const todayStr = todayISO();
   const todayTasks = visibleTasks.filter(t => t.createdAt && t.createdAt.slice(0, 10) === todayStr);

@@ -126,7 +126,7 @@ function buildPhotosSection(photos) {
   const sorted = [...photos].sort((a, b) => (a.uploadedAt || "").localeCompare(b.uploadedAt || ""));
   const cards = sorted.map(p => `
     <div style="width:31%;margin-bottom:16px;break-inside:avoid">
-      <img src="${p.url}" crossorigin="anonymous" style="width:100%;aspect-ratio:630/435;object-fit:cover;border-radius:8px;border:1px solid #eee;display:block"/>
+      <img src="${p.url}" style="width:100%;aspect-ratio:630/435;object-fit:cover;border-radius:8px;border:1px solid #eee;display:block"/>
       <div style="font-size:10px;color:#888;margin-top:4px">${p.category || ""}</div>
       <div style="font-size:10px;color:#aaa">${fmtDateShort(p.uploadedAt)} · ${p.uploadedBy || ""}</div>
       ${p.caption ? `<div style="font-size:10px;color:#555">${p.caption}</div>` : ""}
@@ -154,7 +154,20 @@ function pdfFilename(title, dateFrom, dateTo) {
    never cut across a page break and no single canvas gets big enough to hit iOS's size limit.
    Rendering happens on an off-screen 720px-wide copy so a phone-width layout isn't squeezed. */
 const SHARE_SCRIPT = `
-var pdfFile = null;
+var pdfFile = null, pdfMissingPhotos = 0;
+/* The preview's own <img> tags load photos normally (always works). Drawing them into the PDF
+   needs a CORS-enabled copy, which only works once the Storage bucket has a CORS rule — so the
+   clone swaps in fresh crossorigin images (with a cache-buster so the browser doesn't reuse
+   the preview's non-CORS cached copy) and counts any that still fail. */
+function corsImages(root) {
+  Array.prototype.forEach.call(root.querySelectorAll("img"), function(old) {
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.setAttribute("style", old.getAttribute("style") || "");
+    img.src = old.src + (old.src.indexOf("?") === -1 ? "?" : "&") + "pdfcors=1";
+    old.replaceWith(img);
+  });
+}
 function waitImages(root) {
   return Promise.all(Array.prototype.map.call(root.querySelectorAll("img"), function(img) {
     if (img.complete) return null;
@@ -166,7 +179,12 @@ async function buildPdf() {
   clone.style.cssText = "position:absolute;left:-10000px;top:0;width:720px;background:#fff";
   document.body.appendChild(clone);
   try {
+    corsImages(clone);
     await waitImages(clone);
+    pdfMissingPhotos = Array.prototype.filter.call(clone.querySelectorAll("img"), function(img) { return !img.naturalWidth; }).length;
+    /* A photo that failed CORS would come out as an empty box — leave it out of the PDF
+       instead, and say so on the button. */
+    Array.prototype.forEach.call(clone.querySelectorAll("img"), function(img) { if (!img.naturalWidth) img.style.visibility = "hidden"; });
     var pdf = new jspdf.jsPDF({unit:"pt", format:"letter"});
     var pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight();
     var margin = 32, contentW = pageW - margin * 2, ratio = contentW / 720;
@@ -208,15 +226,37 @@ function setBtn(text, enabled) {
   var b = document.getElementById("shareBtn");
   b.textContent = text; b.disabled = !enabled;
 }
+var buildPromise = null;
 function prepare() {
   setBtn("Preparando PDF…", false);
-  buildPdf().then(function() {
+  buildPromise = buildPdf().then(function() {
     var canShare = navigator.canShare && navigator.canShare({files:[pdfFile]});
-    setBtn(canShare ? "Compartir PDF" : "Descargar PDF", true);
+    setBtn((canShare ? "Compartir PDF" : "Descargar PDF") + (pdfMissingPhotos ? " (faltan fotos)" : ""), true);
   }).catch(function(e) {
     console.error(e);
     pdfFile = null;
     setBtn("Reintentar PDF", true);
+  });
+}
+/* On a computer, print the same PDF that gets shared from phones (via a hidden iframe), so a
+   printout looks identical no matter which device made it. Phones keep window.print(), since
+   printing a PDF inside an iframe isn't reliable there; it's also the fallback if the PDF
+   couldn't be built. */
+function printReport() {
+  if (!window.matchMedia("(pointer:fine)").matches || !buildPromise) { window.print(); return; }
+  buildPromise.then(function() {
+    if (!pdfFile || pdfMissingPhotos) { window.print(); return; }
+    var old = document.getElementById("printFrame");
+    if (old) old.remove();
+    var f = document.createElement("iframe");
+    f.id = "printFrame";
+    f.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0";
+    f.onload = function() {
+      try { f.contentWindow.focus(); f.contentWindow.print(); }
+      catch (e) { console.error(e); window.print(); }
+    };
+    f.src = URL.createObjectURL(pdfFile);
+    document.body.appendChild(f);
   });
 }
 function sharePdf() {
@@ -256,11 +296,12 @@ export function exportConstructionReport(projectName, dateFrom, dateTo, sections
 <html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${title}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:24px 24px 60px}
+html{background:#f2f2f2}
+body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:24px 24px 60px;background:#fff;max-width:768px;min-height:100vh;margin:0 auto}
 .topbar{position:sticky;top:0;background:#fff;padding:10px 0;margin:-24px -24px 20px;padding-left:24px;padding-right:24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;z-index:10}
 .topbar button{padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none}
 .topbar button:disabled{opacity:.6;cursor:default}
-@media print{.noprint{display:none!important}body{padding:16px}}
+@media print{.noprint{display:none!important}html{background:#fff}body{padding:16px;max-width:none}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -268,7 +309,7 @@ body{font-family:-apple-system,sans-serif;color:#1a1a1a;padding:24px 24px 60px}
 <div class="topbar noprint">
   <button onclick="window.close()" style="background:#f5f5f5;color:#555;border:0.5px solid rgba(0,0,0,0.15)">‹ Cerrar</button>
   <div style="display:flex;gap:8px">
-    <button onclick="window.print()" style="background:#f5f5f5;color:#555;border:0.5px solid rgba(0,0,0,0.15)">Imprimir</button>
+    <button onclick="printReport()" style="background:#f5f5f5;color:#555;border:0.5px solid rgba(0,0,0,0.15)">Imprimir</button>
     <button id="shareBtn" onclick="sharePdf()" disabled style="background:#E87A30;color:#fff">Preparando PDF…</button>
   </div>
 </div>

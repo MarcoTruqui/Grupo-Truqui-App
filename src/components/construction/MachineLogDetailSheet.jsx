@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { fmtDate, fmtDuration } from "../../lib/dateHelpers";
-import { isAnomalousMachineLog } from "../../lib/constructionHelpers";
+import { isAnomalousMachineLog, fmtHours } from "../../lib/constructionHelpers";
 import { PhotoUpload } from "../shared/PhotoUpload";
 
 export function MachineLogDetailSheet({log, projectId, stopMachineUse, removeMachineLog, onClose}) {
@@ -21,7 +21,7 @@ export function MachineLogDetailSheet({log, projectId, stopMachineUse, removeMac
       const elapsedMs = Date.now() - new Date(log.startAt).getTime();
       const usedHours = end - start;
       if (usedHours > (elapsedMs / 3600000) + 0.5) {
-        if (!confirm(`Registraste ${usedHours.toFixed(1)} horas de uso, pero solo han pasado ${fmtDuration(elapsedMs)} desde que se inició. ¿Registrar de todas formas?`)) return;
+        if (!confirm(`Registraste ${fmtHours(usedHours)} horas de uso, pero solo han pasado ${fmtDuration(elapsedMs)} desde que se inició. ¿Registrar de todas formas?`)) return;
       }
     }
     setSaving(true);
@@ -62,7 +62,7 @@ export function MachineLogDetailSheet({log, projectId, stopMachineUse, removeMac
             </div>}
           </div>
           <div style={{textAlign:"center", background:"#FDEEE3", borderRadius:10, padding:"12px 0", marginBottom:16}}>
-            <div style={{fontSize:22, fontWeight:800, color:"#E87A30"}}>{log.totalHours}</div>
+            <div style={{fontSize:22, fontWeight:800, color:"#E87A30"}}>{fmtHours(log.totalHours)}</div>
             <div style={{fontSize:11, color:"#B75A17"}}>horas de uso</div>
           </div>
           {isAnomalousMachineLog(log) && <div style={{fontSize:12, color:"#A32D2D", background:"#FCEBEB", padding:"8px 10px", borderRadius:8, marginBottom:16}}>⚠️ Esta lectura no parece coincidir con el tiempo transcurrido entre inicio y cierre — revisar.</div>}

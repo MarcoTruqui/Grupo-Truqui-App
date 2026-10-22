@@ -91,25 +91,49 @@ function isAnomalousLog(l) {
   return (l.endHorometro - l.startHorometro) > elapsedHours + 0.5;
 }
 
+/* Same round-up-to-2-decimals as constructionHelpers.roundUpHours, duplicated for the same
+   reason as isAnomalousLog above. */
+function fmtHours(h) {
+  return (Math.ceil(Math.round((Number(h) || 0) * 1e6) / 1e4) / 100).toFixed(2);
+}
+function logHours(l) {
+  return l.status === "completed" ? Math.ceil(Math.round((Number(l.totalHours) || 0) * 1e6) / 1e4) / 100 : 0;
+}
+
+/* Grouped by machine (each with its own subtotal and every use listed under it, oldest
+   first) so the usage per machine for the period can be read straight off the report. */
 function buildMachineryLogsSection(logs) {
   const sorted = [...logs].sort((a, b) => (a.startAt || "").localeCompare(b.startAt || ""));
-  const totalHours = sorted.reduce((s, l) => s + (l.status === "completed" ? (Number(l.totalHours) || 0) : 0), 0);
-  const rows = sorted.map(l => `
-    <div class="blk" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div style="font-size:14px;font-weight:700">${l.machineName}</div>
-        <div style="font-size:11px;color:#888">${fmtDate(l.startAt)}</div>
-      </div>
-      <div style="display:flex;gap:16px;font-size:12px;color:#555">
-        <span>Inicio: <strong>${l.startHorometro}</strong></span>
-        <span>Fin: <strong>${l.status === "completed" ? l.endHorometro : "En curso"}</strong></span>
-        <span style="color:#E87A30;font-weight:700">${l.status === "completed" ? l.totalHours + " hrs" : "—"}</span>
+  const groups = [];
+  sorted.forEach(l => {
+    const key = l.machineId || l.machineName;
+    let g = groups.find(x => x.key === key);
+    if (!g) groups.push(g = {key, name:l.machineName, logs:[]});
+    g.logs.push(l);
+  });
+  groups.sort((a, b) => (a.name || "").localeCompare(b.name || "", "es"));
+  const totalHours = sorted.reduce((s, l) => s + logHours(l), 0);
+  const machineBlocks = groups.map(g => {
+    const subtotal = g.logs.reduce((s, l) => s + logHours(l), 0);
+    const header = `
+    <div class="blk keep-next" style="display:flex;justify-content:space-between;align-items:baseline;background:#FDEEE3;border-radius:8px;padding:8px 12px;margin-bottom:4px">
+      <div style="font-size:14px;font-weight:700;color:#1a1a1a">${g.name}</div>
+      <div style="font-size:14px;font-weight:800;color:#E87A30">${fmtHours(subtotal)} hrs <span style="font-size:11px;font-weight:400;color:#B75A17">· ${g.logs.length} ${g.logs.length === 1 ? "uso" : "usos"}</span></div>
+    </div>`;
+    const rows = g.logs.map(l => `
+    <div class="blk" style="padding:7px 12px;border-bottom:1px solid #eee">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#555">
+        <span style="width:34%">${fmtDate(l.startAt)}</span>
+        <span style="width:46%">${l.startHorometro} → ${l.status === "completed" ? l.endHorometro : "En curso"}</span>
+        <span style="width:20%;text-align:right;color:#E87A30;font-weight:700">${l.status === "completed" ? fmtHours(l.totalHours) + " hrs" : "—"}</span>
       </div>
       ${isAnomalousLog(l) ? `<div style="font-size:11px;color:#A32D2D;background:#FCEBEB;padding:5px 9px;border-radius:8px;margin-top:6px">⚠️ Revisar — la lectura no coincide con el tiempo transcurrido</div>` : ""}
     </div>`).join("");
+    return header + rows + `<div style="height:16px"></div>`;
+  }).join("");
   return `<div style="margin-bottom:32px">
     ${sectionSubtitle("🏗️", "Horómetro Maquinaria")}
-    ${sorted.length ? `<div class="blk" style="text-align:right;font-size:16px;font-weight:800;color:#E87A30;margin-bottom:14px">Total del periodo: ${totalHours} hrs</div>${rows}`
+    ${sorted.length ? `<div class="blk" style="text-align:right;font-size:16px;font-weight:800;color:#E87A30;margin-bottom:14px">Total del periodo: ${fmtHours(totalHours)} hrs</div>${machineBlocks}`
     : '<div class="blk" style="text-align:center;color:#aaa;padding:30px">Sin uso de maquinaria en este rango de fechas.</div>'}
   </div>`;
 }

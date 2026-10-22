@@ -207,9 +207,20 @@ export async function stopMachineUse(currentUser, storage, db, projectId, logId,
     const urls = await uploadMachinePhotos(storage, projectId, photos);
     await db.collection("constructionMachineLogs").doc(logId).update({
       endHorometro:Number(endHorometro), endPhotoUrls:urls, endAt:new Date().toISOString(), endedBy:currentUser.name,
-      status:"completed", totalHours:Number(endHorometro) - Number(startHorometro)
+      status:"completed", totalHours:roundUpHours(Number(endHorometro) - Number(startHorometro))
     });
   } catch (e) { alert("Error: " + e.message); }
+}
+
+/* Subtracting two decimal readings leaves floating-point noise (1292.3 - 1284.1 =
+   8.200000000000045), so first snap to 6 decimals to drop that noise, then always round UP
+   to 2 decimals — otherwise the noise alone would bump 8.2 to 8.21. */
+export function roundUpHours(h) {
+  return Math.ceil(Math.round(h * 1e6) / 1e4) / 100;
+}
+// Older logs were saved unrounded, so displays round on the way out too.
+export function fmtHours(h) {
+  return roundUpHours(Number(h) || 0).toFixed(2);
 }
 
 export async function removeMachineLog(db, id) {

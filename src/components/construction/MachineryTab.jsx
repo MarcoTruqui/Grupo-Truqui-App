@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { fmtDate } from "../../lib/dateHelpers";
-import { isAnomalousMachineLog } from "../../lib/constructionHelpers";
+import { isAnomalousMachineLog, fmtHours } from "../../lib/constructionHelpers";
 import { AddMachineSheet } from "./AddMachineSheet";
 import { StartMachineUseSheet } from "./StartMachineUseSheet";
 import { MachineLogDetailSheet } from "./MachineLogDetailSheet";
@@ -40,7 +40,7 @@ export function MachineryTab({projectId, machines, logs, addConstructionMachine,
         <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start"}}>
           <div>
             <div className="task-title">{l.machineName}</div>
-            <div className="task-prop">{fmtDate(l.startAt)} · {l.startHorometro} → {l.endHorometro} · {l.totalHours} hrs</div>
+            <div className="task-prop">{fmtDate(l.startAt)} · {l.startHorometro} → {l.endHorometro} · {fmtHours(l.totalHours)} hrs</div>
           </div>
           {isAnomalousMachineLog(l) && <div style={{color:"#A32D2D", fontSize:11, fontWeight:700, background:"#FCEBEB", padding:"2px 8px", borderRadius:20, flexShrink:0}}>⚠️ Revisar</div>}
         </div>

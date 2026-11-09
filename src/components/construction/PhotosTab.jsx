@@ -33,7 +33,7 @@ export function PhotosTab({projectId, photos, photoCategories, updateConstructio
     <div className="photo-grid">
       {sorted.map(p => (
         <div key={p.id} style={{position:"relative", display:"flex", flexDirection:"column", alignItems:"center"}}>
-          <img src={p.url} className="photo-thumb" onClick={() => setLightbox(p)}/>
+          <img src={p.url} loading="lazy" className="photo-thumb" onClick={() => setLightbox(p)}/>
           <button onClick={() => { if (confirm("¿Eliminar esta foto?")) removeConstructionPhoto(p.id); }} style={{position:"absolute", top:-4, right:-4, background:"rgba(0,0,0,0.7)", border:"none", color:"#fff", borderRadius:"50%", width:18, height:18, fontSize:11, cursor:"pointer", padding:0}}>×</button>
           <div className="photo-caption">{p.uploadedBy}</div>
           <div className="photo-caption" style={{marginTop:0}}>{fmtDateTime(p.uploadedAt)}</div>

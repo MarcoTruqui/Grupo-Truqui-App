@@ -1,4 +1,4 @@
-import { compressImg } from "./firestoreHelpers";
+import { compressImg, UPLOAD_CACHE_CONTROL } from "./firestoreHelpers";
 
 /* ===== Projects ===== */
 export async function addConstructionProject(db, name) {
@@ -58,7 +58,7 @@ export async function addConstructionPhotos(currentUser, storage, db, projectId,
     try {
       const blob = await compressImg(photo.url, 1400, 0.7);
       const ref = storage.ref(`construction/${projectId}/photos/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`);
-      await ref.put(blob, {contentType:"image/jpeg"});
+      await ref.put(blob, {contentType:"image/jpeg", cacheControl:UPLOAD_CACHE_CONTROL});
       const url = await ref.getDownloadURL();
       return {projectId, url, category, caption:photo.caption || "", uploadedBy:currentUser.name, uploadedAt:new Date().toISOString()};
     } catch (e) { console.error("Error subiendo foto:", e); return null; }
@@ -79,7 +79,7 @@ export async function removeConstructionPhoto(db, id) {
 export async function uploadConstructionDocument(currentUser, storage, db, projectId, file, category, name, previousDocId, previousVersion, previousRootId) {
   try {
     const ref = storage.ref(`construction/${projectId}/documents/${Date.now()}_${file.name}`);
-    await ref.put(file, {contentType:file.type || "application/octet-stream"});
+    await ref.put(file, {contentType:file.type || "application/octet-stream", cacheControl:UPLOAD_CACHE_CONTROL});
     const url = await ref.getDownloadURL();
     const version = (previousVersion || 0) + 1;
     const isImage = (file.type || "").startsWith("image/");
@@ -105,7 +105,7 @@ export async function removeConstructionDocument(db, id) {
 async function uploadDetailPhoto(storage, projectId, dataUrl) {
   const blob = await fetch(dataUrl).then(r => r.blob());
   const ref = storage.ref(`construction/${projectId}/details/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`);
-  await ref.put(blob, {contentType:"image/jpeg"});
+  await ref.put(blob, {contentType:"image/jpeg", cacheControl:UPLOAD_CACHE_CONTROL});
   return ref.getDownloadURL();
 }
 
@@ -177,7 +177,7 @@ async function uploadMachinePhotos(storage, projectId, photos) {
   return Promise.all((photos || []).map(async photo => {
     const blob = await compressImg(photo.url, 1400, 0.7);
     const ref = storage.ref(`construction/${projectId}/machinery/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`);
-    await ref.put(blob, {contentType:"image/jpeg"});
+    await ref.put(blob, {contentType:"image/jpeg", cacheControl:UPLOAD_CACHE_CONTROL});
     return ref.getDownloadURL();
   }));
 }

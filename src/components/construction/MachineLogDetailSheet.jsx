@@ -48,7 +48,7 @@ export function MachineLogDetailSheet({log, projectId, stopMachineUse, removeMac
           <div style={{fontSize:13, fontWeight:600}}>Horómetro: {log.startHorometro}</div>
           <div style={{fontSize:11, color:"#888", marginTop:2}}>{fmtDate(log.startAt)} · {log.startedBy}</div>
           {(log.startPhotoUrls || []).length > 0 && <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
-            {log.startPhotoUrls.map((u, i) => <img key={i} src={u} onClick={() => window.open(u, "_blank")} style={{width:60, height:60, borderRadius:8, objectFit:"cover", cursor:"pointer"}}/>)}
+            {log.startPhotoUrls.map((u, i) => <img key={i} src={u} loading="lazy" onClick={() => window.open(u, "_blank")} style={{width:60, height:60, borderRadius:8, objectFit:"cover", cursor:"pointer"}}/>)}
           </div>}
         </div>
 
@@ -58,7 +58,7 @@ export function MachineLogDetailSheet({log, projectId, stopMachineUse, removeMac
             <div style={{fontSize:13, fontWeight:600}}>Horómetro: {log.endHorometro}</div>
             <div style={{fontSize:11, color:"#888", marginTop:2}}>{fmtDate(log.endAt)} · {log.endedBy}</div>
             {(log.endPhotoUrls || []).length > 0 && <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
-              {log.endPhotoUrls.map((u, i) => <img key={i} src={u} onClick={() => window.open(u, "_blank")} style={{width:60, height:60, borderRadius:8, objectFit:"cover", cursor:"pointer"}}/>)}
+              {log.endPhotoUrls.map((u, i) => <img key={i} src={u} loading="lazy" onClick={() => window.open(u, "_blank")} style={{width:60, height:60, borderRadius:8, objectFit:"cover", cursor:"pointer"}}/>)}
             </div>}
           </div>
           <div style={{textAlign:"center", background:"#FDEEE3", borderRadius:10, padding:"12px 0", marginBottom:16}}>

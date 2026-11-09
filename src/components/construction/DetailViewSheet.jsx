@@ -48,7 +48,7 @@ export function DetailViewSheet({projectId, detail, addDetailVersion, removeDeta
         <div className="section-label">Historial</div>
         {history.map((h, i) => (
           <div key={i} style={{display:"flex", gap:10, alignItems:"center", padding:"8px 0", borderBottom:"0.5px solid #f0f0f0"}}>
-            <img src={h.photoUrl} className="photo-thumb" style={{width:52, height:52, cursor:"zoom-in"}} onClick={() => setLightbox(h.photoUrl)}/>
+            <img src={h.photoUrl} loading="lazy" className="photo-thumb" style={{width:52, height:52, cursor:"zoom-in"}} onClick={() => setLightbox(h.photoUrl)}/>
             <div style={{fontSize:12, color:"#888"}}>{fmtDateTime(h.createdAt)}<br/>{h.createdBy}</div>
           </div>
         ))}

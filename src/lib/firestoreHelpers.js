@@ -174,10 +174,15 @@ export async function cancelCompRequest(db,reqId) {
    over db/currentUser/role/properties/storage directly. Extracted here as standalone
    functions, they take those as explicit leading params instead. ===== */
 
+/* Every upload path is unique (timestamp + random suffix) and files are never overwritten, so
+   phones can safely keep a downloaded copy for a year instead of re-downloading every photo
+   each time a gallery opens. "private" keeps shared proxies/CDNs from caching token links. */
+export const UPLOAD_CACHE_CONTROL = "private, max-age=31536000";
+
 export async function uploadDataUrl(storage, dataUrl, path) {
   const blob = await fetch(dataUrl).then(r => r.blob());
   const ref = storage.ref(path);
-  await ref.put(blob, {contentType:"image/png"});
+  await ref.put(blob, {contentType:"image/png", cacheControl:UPLOAD_CACHE_CONTROL});
   return ref.getDownloadURL();
 }
 
@@ -336,7 +341,7 @@ export async function uploadPhotos(storage, photos, folder) {
     try {
       const blob = await compressImg(photo.url);
       const ref = storage.ref(`${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${photo.name.replace(/\.[^.]+$/, "")}.jpg`);
-      await ref.put(blob, {contentType:"image/jpeg"});
+      await ref.put(blob, {contentType:"image/jpeg", cacheControl:UPLOAD_CACHE_CONTROL});
       const url = await ref.getDownloadURL();
       return {url, name:photo.name, caption:photo.caption || ""};
     } catch (e) {

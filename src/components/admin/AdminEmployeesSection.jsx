@@ -44,7 +44,7 @@ function EmployeeCard({u,users,ptoRequests,canEdit,setEditing,setViewingId}) {
   </div>;
 }
 
-export function AdminEmployeesSection({role,users,ptoRequests,compWork,compRequests,allPropNames,propColorMap,updateUser,removeUser,addUser,onBack,onSwitch}) {
+export function AdminEmployeesSection({currentUser,role,users,ptoRequests,compWork,compRequests,allPropNames,propColorMap,updateUser,removeUser,addUser,onBack,onSwitch}) {
   const canEdit = role==="admin";
   const [editing,setEditing] = useState(null);
   const [viewingId,setViewingId] = useState(null);
@@ -86,7 +86,7 @@ export function AdminEmployeesSection({role,users,ptoRequests,compWork,compReque
         </div>;
       })}
     </div>
-    {canEdit && <EditSheet editing={editing} setEditing={setEditing} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser}/>}
+    {canEdit && <EditSheet editing={editing} setEditing={setEditing} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} currentUserId={currentUser.id}/>}
     {viewingId && <EmployeeDetailSheet role={role} viewingId={viewingId} setViewingId={setViewingId} setEditing={setEditing} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests}/>}
     {canEdit && adding && <AddEmployeeSheet allPropNames={allPropNames} propColorMap={propColorMap} addUser={addUser} onClose={()=>setAdding(false)}/>}
   </div>;

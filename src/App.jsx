@@ -114,6 +114,9 @@ function App() {
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async u => {
+      // Forget the last-opened portal on every login/logout — otherwise the next person to log in
+      // on the same device (without a page reload) lands in whatever portal the previous user had open.
+      setPortal(null);
       if (u) {
         setAuthUser(u);
         try {
@@ -319,6 +322,9 @@ function App() {
     <button onClick={() => auth.signOut()} style={{padding:"12px 28px", borderRadius:10, border:"none", background:"#534AB7", color:"#fff", fontSize:14, fontWeight:600, cursor:"pointer"}}>Cerrar sesión</button>
   </div>;
 
+  // Safety net: never render a portal this role isn't allowed into, whatever the state says.
+  const allowedPortals = {maintenance:!HR_ONLY_ROLES.includes(role), admin:true, cleaning:canLogCleaning || canCleaningStatsOnly, construction:canConstruction};
+  if (portal && !allowedPortals[portal]) { setPortal(null); return null; }
   if (!portal) {
     if (!hasExtraPortal && HR_ONLY_ROLES.includes(role)) { setPortal("admin"); return null; }
     return <PortalSelector user={currentUser} onSelect={setPortal} canCleaning={canLogCleaning || canCleaningStatsOnly} canConstruction={canConstruction} showMaintenance={!HR_ONLY_ROLES.includes(role)}/>;
@@ -337,6 +343,14 @@ function App() {
   const propCardProps = {propColorMap, visibleTasks, properties, todayStr, getOccupancy, setActiveProp, setPropFilter, setTab, isAdmin, setEditingProp, removeProperty};
   const taskRowProps = {canViewSensitive, setSelTask};
 
+  // Same "⊞ Portales" button the other portals have at the top right, with the pending-vacation count.
+  const canSwitchPortal = !HR_ONLY_ROLES.includes(role);
+  const portalBadge = role==="supervisor"
+    ? ptoRequests.filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor").length
+    : role==="admin"
+    ? ptoRequests.filter(r=>r.status==="pending_admin").length
+    : 0;
+
   return <div className="shell">
     {!isOnline && <div className="offline-bar">Sin conexión — los cambios se sincronizarán al reconectar</div>}
 
@@ -344,7 +358,13 @@ function App() {
       <div className="topbar">
         <div className="topbar-row">
           <div><div className="topbar-title">Grupo Truqui</div><div className="topbar-sub">Bienvenido, {currentUser.name.split(" ")[0]}</div></div>
-          <RBadge role={role}/>
+          <div style={{display:"flex", alignItems:"center", gap:8}}>
+            <RBadge role={role}/>
+            {canSwitchPortal && <button onClick={() => setPortal(null)} style={{fontSize:11, padding:"6px 14px", borderRadius:8, border:"0.5px solid rgba(0,0,0,0.12)", background:"#f5f5f5", color:"#555", cursor:"pointer", fontWeight:500, display:"flex", alignItems:"center", gap:6}}>
+              ⊞ Portales
+              {portalBadge>0 && <span style={{background:"#534AB7", color:"#fff", fontSize:10, fontWeight:700, padding:"0 6px", borderRadius:20, lineHeight:"16px"}}>{portalBadge}</span>}
+            </button>}
+          </div>
         </div>
       </div>
       <div className="screen">
@@ -527,21 +547,9 @@ function App() {
 
         </>}
 
-        {(()=>{
-          const canSeeAdmin = !HR_ONLY_ROLES.includes(role);
-          const ptoBadge = role==="supervisor"
-            ? ptoRequests.filter(r=>["maintenance","cleaning"].includes(r.userRole)&&r.status==="pending_supervisor").length
-            : role==="admin"
-            ? ptoRequests.filter(r=>r.status==="pending_admin").length
-            : 0;
-          return <div style={{marginTop:24,display:"flex",flexDirection:"column",gap:10}}>
-            {canSeeAdmin&&<button onClick={() => setPortal(null)} style={{width:"100%",padding:14,borderRadius:12,border:"1.5px solid #A0D9C5",background:"#E1F5EE",color:"#0F6E56",fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-              ⊞ Portales
-              {ptoBadge>0&&<span style={{background:"#534AB7",color:"#fff",fontSize:12,fontWeight:700,padding:"1px 8px",borderRadius:20,lineHeight:"18px"}}>{ptoBadge}</span>}
-            </button>}
-            <button className="btn-red" onClick={() => auth.signOut()}>Cerrar sesión</button>
-          </div>;
-        })()}
+        <div style={{marginTop:24}}>
+          <button className="btn-red" onClick={() => auth.signOut()}>Cerrar sesión</button>
+        </div>
       </div>
     </>}
 

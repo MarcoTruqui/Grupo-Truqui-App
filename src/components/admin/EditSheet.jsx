@@ -1,8 +1,18 @@
 import { ROLE_META, COLOR_FRAMES } from "../../lib/constants";
 import { getVacationDaysBySeniority, getCurrentAnniversaryYear } from "../../lib/firestoreHelpers";
 
-export function EditSheet({editing,setEditing,allPropNames,propColorMap,updateUser}) {
+/* Deleting only removes the profile doc: the person's Firebase login still exists (it can't be
+   deleted from the browser), but without a profile they get "Perfil de usuario no encontrado"
+   and can't use the app. Past vacation/extra-day/cleaning records keep their own copy of the
+   name, so history stays readable. */
+export function EditSheet({editing,setEditing,allPropNames,propColorMap,updateUser,removeUser,currentUserId}) {
   if(!editing) return null;
+  const isSelf = editing.id===currentUserId;
+  async function handleDelete(){
+    if(!confirm(`¿Eliminar a ${editing.name}? Ya no podrá entrar a la app. Su historial (vacaciones, días extra, limpiezas) se conserva. Esta acción no se puede deshacer.`)) return;
+    await removeUser(editing.id);
+    setEditing(null);
+  }
   return <div className="modal-overlay" onClick={()=>setEditing(null)}>
     <div className="modal-sheet" onClick={e=>e.stopPropagation()}>
       <div className="modal-handle"/>
@@ -100,6 +110,7 @@ export function EditSheet({editing,setEditing,allPropNames,propColorMap,updateUs
             <div style={{fontSize:11,color:"#aaa",marginTop:6}}>Pasos de 0.5 días</div>
           </div>
         </>}
+        {!isSelf&&<button className="btn-red" style={{marginTop:24,marginBottom:8}} onClick={handleDelete}>Eliminar empleado</button>}
       </div>
       <div className="modal-sheet-bottom">
         <div className="btn-row">

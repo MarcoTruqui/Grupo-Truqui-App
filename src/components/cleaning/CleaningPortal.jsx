@@ -12,7 +12,8 @@ export function CleaningPortal({db, currentUser, role, allPropNames, propColorMa
   const [cleaningSel, setCleaningSel] = useState(null);
   const [pendingProp, setPendingProp] = useState(null);
   const [dupWarning, setDupWarning] = useState(null);
-  const [tab, setTab] = useState("main");
+  const statsOnly = role === "contador";
+  const [tab, setTab] = useState(statsOnly ? "stats" : "main");
   const isCleaning = role === "cleaning";
   const userAssignedProps = currentUser?.properties || [];
   const propNames = isCleaning ? allPropNames.filter(p => userAssignedProps.includes(p)) : allPropNames;

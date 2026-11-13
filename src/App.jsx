@@ -217,6 +217,10 @@ function App() {
   const isMaintenance = role === "maintenance";
   const canLogCleaning = ["cleaning","supervisor","admin"].includes(role);
   const canConstruction = ["construction","admin"].includes(role);
+  // Contador gets a read-only, stats-only view of the Limpieza portal (no logging/cleaning).
+  const canCleaningStatsOnly = role === "contador";
+  // HR-only roles normally skip the portal picker — unless they have a second portal to pick.
+  const hasExtraPortal = canConstruction || canCleaningStatsOnly;
 
   const allPropNames = properties.map(p => p.name);
   const userAssignedProps = currentUser?.properties || [];
@@ -316,10 +320,10 @@ function App() {
   </div>;
 
   if (!portal) {
-    if (!canConstruction && HR_ONLY_ROLES.includes(role)) { setPortal("admin"); return null; }
-    return <PortalSelector user={currentUser} onSelect={setPortal} canCleaning={canLogCleaning} canConstruction={canConstruction} showMaintenance={!HR_ONLY_ROLES.includes(role)}/>;
+    if (!hasExtraPortal && HR_ONLY_ROLES.includes(role)) { setPortal("admin"); return null; }
+    return <PortalSelector user={currentUser} onSelect={setPortal} canCleaning={canLogCleaning || canCleaningStatsOnly} canConstruction={canConstruction} showMaintenance={!HR_ONLY_ROLES.includes(role)}/>;
   }
-  if (portal === "admin") return <AdminPortal currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} db={db} onSwitch={(!HR_ONLY_ROLES.includes(role) || canConstruction) ? ()=>setPortal(null) : null} onMarkSeen={markPTOSeen} ptoLastSeen={ptoLastSeen} onMarkCompSeen={markCompSeen} compLastSeen={compLastSeen} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser}/>;
+  if (portal === "admin") return <AdminPortal currentUser={currentUser} role={role} users={users} ptoRequests={ptoRequests} compWork={compWork} compRequests={compRequests} db={db} onSwitch={(!HR_ONLY_ROLES.includes(role) || hasExtraPortal) ? ()=>setPortal(null) : null} onMarkSeen={markPTOSeen} ptoLastSeen={ptoLastSeen} onMarkCompSeen={markCompSeen} compLastSeen={compLastSeen} allPropNames={allPropNames} propColorMap={propColorMap} updateUser={updateUser} removeUser={removeUser} addUser={addUser}/>;
   if (portal === "cleaning") return <CleaningPortal db={db} currentUser={currentUser} role={role} allPropNames={allPropNames} propColorMap={propColorMap} users={users} cleanings={cleanings} bookings={bookings} bookingsLoaded={bookingsLoaded} startOrJoinCleaning={startOrJoinCleaning} setItemStatus={setItemStatus} joinCleaningWorker={joinCleaningWorker} removeCleaningWorker={removeCleaningWorker} signCleaningWorker={signCleaningWorker} cancelCleaning={cancelCleaning} addCleaningComment={addCleaningComment} onSwitch={()=>setPortal(null)}/>;
   if (portal === "construction") return <ConstructionPortal db={db} storage={storage} currentUser={currentUser} projects={constructionProjects} headcount={constructionHeadcount} dailyLogs={constructionDailyLogs} photos={constructionPhotos} documents={constructionDocuments} details={constructionDetails} subcontractors={constructionSubcontractors} machines={constructionMachines} machineLogs={constructionMachineLogs} addConstructionProject={addConstructionProject} updateConstructionProject={updateConstructionProject} renamePhotoCategory={renamePhotoCategory} saveHeadcountEntry={saveHeadcountEntry} removeHeadcountEntry={removeHeadcountEntry} addDailyLog={addDailyLog} removeDailyLog={removeDailyLog} addConstructionPhotos={addConstructionPhotos} removeConstructionPhoto={removeConstructionPhoto} uploadConstructionDocument={uploadConstructionDocument} removeConstructionDocument={removeConstructionDocument} addDetailPin={addDetailPin} addDetailVersion={addDetailVersion} removeDetailPin={removeDetailPin} updateDetailLabel={updateDetailLabel} addSubcontractor={addSubcontractor} updateSubcontractor={updateSubcontractor} removeSubcontractor={removeSubcontractor} addSubPayment={addSubPayment} removeSubPayment={removeSubPayment} addConstructionMachine={addConstructionMachine} startMachineUse={startMachineUse} stopMachineUse={stopMachineUse} removeMachineLog={removeMachineLog} removeConstructionMachine={removeConstructionMachine} onSwitch={()=>setPortal(null)}/>;
 
